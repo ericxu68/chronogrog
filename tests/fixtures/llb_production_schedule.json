@@ -1,0 +1,103 @@
+{
+  "name": "Loon's Landing Production Schedule",
+  "resources": [
+    {
+      "id": 1
+      "name": "Big Bertha",
+      "type": "fermentor",
+      "capacity": "14g"
+    },
+    {
+      "id": 2,
+      "name": "Large Kettle",
+      "type": "kettle",
+      "capacity": "15g"
+    },
+    {
+      "id": 3,
+      "name": "Large Mash Tun",
+      "type": "mashtun",
+      "capacity": "15g"
+    },
+    {
+      "id": 4,
+      "name": "Large Lauter Tun",
+      "type": "lautertun",
+      "capacity": "15g"
+    },
+    {
+      "id": 5,
+      "name": "Keg 001",
+      "type": "keg",
+      "capacity": "5g"
+    },
+    {
+      "id": 6,
+      "name": "Scott's Kegerator",
+      "type": "kegerator",
+      "capacity": "2k"
+    }
+  ],
+  "phaseTemplates": [
+    {
+      "name": "Planning",
+      "id": 0,
+      "duration": "4h"
+    },
+    {
+      "name": "Brewing",
+      "id": 1,
+      "duration": "1d",
+      "resourcesRequired": [
+        "kettle",
+        "mashtun",
+        "lautertun"
+      ]
+    },
+    {
+      "name": "Primary Fermentation",
+      "id": 2,
+      "duration": "1w",
+      "resourcesRequired": [
+        "fermentor"
+      ]
+    },
+    {
+      "name": "Secondary Fermentation",
+      "id": 3,
+      "duration": "1m",
+      "resourcesRequired": [
+        "fermentor"
+      ]
+    },
+    {
+      "name": "Conditioning/Aging",
+      "id": 4,
+      "resourcesRequired": [
+        "fermentor"
+      ]
+    },
+    {
+      "name": "Carbonation",
+      "id": 5,
+      "duration": "10d",
+      "resourcesRequired": [
+        "keg"
+      ]
+    },
+    {
+      "name": "Available to Drink",
+      "id": 6,
+      "duration": "6m",
+      "resourcesRequired": [
+        "keg",
+        "kegerator"
+      ]
+    }
+  ],
+  "beers": [
+    {
+      "name": ""
+    }
+  ]
+}
