@@ -1,0 +1,49 @@
+{
+  "name": "Simple Production Schedule",
+  "id": 1,
+  "timeline": {
+    "configuration": "calendar",
+    "start": "2020-01-01"
+  },
+  "phaseTemplates": [
+    {
+      "description": "Planning",
+      "id": 1,
+      "order": 0,
+      "defaultDuration": "1h"
+    },
+    {
+      "description": "Brewing",
+      "id": 2,
+      "order": 1,
+      "defaultDuration": "1d"
+    },
+    {
+      "description": "Primary Fermentation",
+      "id": 3,
+      "order": 2,
+      "defaultDuration": "10"
+    },
+    {
+      "description": "Secondary Fermentation",
+      "id": 4,
+      "order": 3,
+      "defaultDuration": "4w"
+    },
+    {
+      "description": "Conditioning/Aging",
+      "id": 5,
+      "order": 4
+    },
+    {
+      "description": "Carbonation",
+      "id": 6,
+      "order": 5,
+      "defaultDuration": "10d"
+    },
+    {
+      "description": "Available to Drink",
+      "id": 7,
+      "order": 6,
+      "defaultDuration": "6m"
+    }

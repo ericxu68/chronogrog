@@ -5,45 +5,120 @@
     "configuration": "calendar",
     "start": "2020-01-01"
   },
-  "phases": [
+  "resources": [
+    {
+      "id": 1,
+      "name": "Big Bertha",
+      "type": "fermentor",
+      "capacity": "14g"
+    },
+    {
+      "id": 2,
+      "name": "Large Kettle",
+      "type": "kettle",
+      "capacity": "15g"
+    },
+    {
+      "id": 3,
+      "name": "Large Mash Tun",
+      "type": "mashtun",
+      "capacity": "15g"
+    },
+    {
+      "id": 4,
+      "name": "Large Lauter Tun",
+      "type": "lautertun",
+      "capacity": "15g"
+    },
+    {
+      "id": 5,
+      "name": "Keg 001",
+      "type": "keg",
+      "capacity": "5g"
+    },
+    {
+      "id": 6,
+      "name": "Scott's Kegerator",
+      "type": "kegerator",
+      "capacity": "2k"
+    }
+  ],
+  "phaseTemplates": [
     {
       "description": "Planning",
-      "id": 1,
+      "id": "planning",
       "order": 0,
       "defaultDuration": "1h"
     },
     {
       "description": "Brewing",
-      "id": 2,
+      "id": "brewing",
       "order": 1,
       "defaultDuration": "1d"
     },
     {
       "description": "Primary Fermentation",
-      "id": 3,
-      "order": 2
+      "id": "primary",
+      "order": 2,
+      "defaultDuration": "10"
     },
     {
       "description": "Secondary Fermentation",
-      "id": 4,
-      "order": 3
+      "id": "secondary",
+      "order": 3,
+      "defaultDuration": "4w"
     },
     {
       "description": "Conditioning/Aging",
-      "id": 5,
+      "id": "conditioning",
       "order": 4
     },
     {
       "description": "Carbonation",
-      "id": 6,
+      "id": "carbonation",
       "order": 5,
       "defaultDuration": "10d"
     },
     {
       "description": "Available to Drink",
-      "id": 7,
+      "id": "ready",
       "order": 6,
       "defaultDuration": "6m"
+    }
+  ],
+  "recipes": [
+    {
+      "name": "Damned Squirrel Mk. II",
+      "color": "#7A5624",
+      "batchSize": "10g",
+      "start": "2020-01-01",
+      "phases": [
+        {
+          "template": "planning"
+        },
+        {
+          "template": "brewing",
+          "resourcesNeeded": [ "kettle", "mashtun", "lautertun" ]
+        },
+        {
+          "template": "primary",
+          "duration": "33d",
+          "resourcesNeeded": [ "fermentor" ]
+        },
+        {
+          "template": "secondary",
+          "duration": "64d",
+          "resourcesNeeded": [ "fermentor" ]
+        },
+        {
+          "template": "carbonation",
+          "resourcesNeeded": [ "gastank", "kegerator", "keg" ]
+        },
+        {
+          "template": "ready",
+          "resourcesNeeded": [ "keg" ]
+        }
+      ]
     }
   ]
 }
