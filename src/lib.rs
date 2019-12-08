@@ -1,3 +1,9 @@
+use std::default::Default;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::prelude::*;
+use std::iter::Iterator;
+
 extern crate tint;
 use tint::Color;
 
@@ -7,10 +13,9 @@ use chrono::format::ParseError;
 
 use serde::{Deserialize, Serialize};
 use serde::{Deserializer, Serializer};
-use std::default::Default;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::prelude::*;
+
+extern crate string_builder;
+use string_builder::Builder;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ResourceType {
@@ -55,7 +60,7 @@ impl Serialize for ResourceType {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Resource {
     pub id: usize,
     pub name: String,
@@ -130,8 +135,8 @@ pub struct ProductionSchedule {
     pub phase_templates: Vec<ProductionPhaseTemplate>,
     pub resources: Vec<Resource>,
 
-    // #[serde(skip_serializing, skip_deserializing)]
-    // recipes: Vec<Recipe>,
+    #[serde(skip_serializing, skip_deserializing)]
+    recipes: Vec<Recipe>,
 
     #[serde(rename="recipes")]
     pub recipe_specs: Vec<RecipeSpec>,
@@ -150,13 +155,18 @@ impl ProductionSchedule {
         let result: serde_json::Result<ProductionSchedule> = serde_json::from_str(contents.as_str());
         match result {
             Ok(mut x) => {
-                x.last_id_used = 0;
+                x.init();
                 x
             },
             Err(e) => {
                 panic!("Unable to parse due to: {}", e);
             }
         }
+    }
+
+    pub fn init(&mut self) {
+        self.last_id_used = 0;
+        self.rebuild_recipes_from_specs();
     }
 
     pub fn get_phase_by_id(&self, id: &str) -> Option<ProductionPhaseTemplate> {
@@ -174,6 +184,17 @@ impl ProductionSchedule {
             if next_res.id == id {
                 return Some(next_res.clone());
             }
+        }
+
+        None
+    }
+
+    pub fn get_available_resource_by_type(&self, resource_type: ResourceType) -> Option<Resource> {
+        let resources: Vec<Resource> = self.resources.clone();
+        if resources.iter().any(|x| x.resource_type == resource_type) {
+            return resources.into_iter()
+                            .filter(|x| x.resource_type == resource_type)
+                            .next();
         }
 
         None
@@ -200,33 +221,71 @@ impl ProductionSchedule {
     //     }
     // }
 
-    pub fn get_recipe_by_name(&mut self, name: &str) -> Option<Recipe> {
-        let mut spec: Option<RecipeSpec> = None;
-
-        let recipes = self.recipe_specs.clone();
-        for next_recipe in recipes {
+    pub fn get_recipe_by_name(&self, name: &str) -> Option<Recipe> {
+        for next_recipe in &self.recipes {
             if next_recipe.name == name {
-                spec = Some(next_recipe);
-                break;
+                return Some(next_recipe.clone());
             }
         }
 
-        match spec {
-            Some(x) => Some(Recipe {
-                         id: self.get_next_id(),
-                         name: x.name.clone(),
-                         color: x.color(),
-                         phases: vec![]
-                     }),
-            None => None
+        None
+    }
+
+    pub fn get_recipe_iterator(&self) -> std::slice::Iter<Recipe> {
+        self.recipes.iter()
+    }
+
+    pub fn output_to_pla_format(&self) -> String {
+        let mut builder = Builder::default();
+        for next_recipe in self.get_recipe_iterator() {
+            builder.append(format!("[{}] {}\n", next_recipe.id, next_recipe.name));
+
+            for next_phase in next_recipe.get_phase_iterator() {
+                let indent = 1;
+
+                builder.append(format!("{}child {}\n", " ".repeat(indent * 2), next_phase.id));
+            }
         }
+
+        builder.string().unwrap()
     }
 
     fn get_next_id(&mut self) -> usize {
-        let ret_id: usize = self.last_id_used;
-        self.last_id_used = self.last_id_used + 1;
+        self.last_id_used += 1;
 
-        ret_id
+        self.last_id_used
+    }
+
+    fn rebuild_recipes_from_specs(&mut self) {
+        let mut recipes_vec = vec![];
+        let recipes = self.recipe_specs.clone();
+        for next_recipe_spec in recipes {
+            let mut recipe_template: Recipe = Recipe {
+                id: self.get_next_id(),
+                name: next_recipe_spec.name.clone(),
+                color: next_recipe_spec.color(),
+                phases: vec![]
+            };
+
+            recipe_template.phases = self.rebuild_phases_from_specs(&next_recipe_spec);
+
+            recipes_vec.push(recipe_template);
+        }
+
+        self.recipes = recipes_vec;
+    }
+
+    fn rebuild_phases_from_specs(&mut self, recipe_spec: &RecipeSpec) -> Vec<PhaseInstance> {
+        let mut phases: Vec<PhaseInstance> = vec![];
+
+        for next_spec in recipe_spec.phase_specs.iter() {
+            let id: usize = self.get_next_id();
+            phases.push(PhaseInstance {
+                id: id
+            });
+        }
+
+        phases
     }
 }
 
@@ -254,7 +313,8 @@ impl RecipeSpec {
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct PhaseInstance {
-    duration: Duration
+    pub id: usize
+    // duration: Duration
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -263,4 +323,10 @@ pub struct Recipe {
     pub name: String,
     pub color: Color,
     pub phases: Vec<PhaseInstance>
+}
+
+impl Recipe {
+    pub fn get_phase_iterator(&self) -> std::slice::Iter<PhaseInstance> {
+        self.phases.iter()
+    }
 }

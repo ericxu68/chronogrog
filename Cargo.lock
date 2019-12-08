@@ -33,6 +33,7 @@ dependencies = [
  "chrono 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "string-builder 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tint 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -123,6 +124,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "string-builder"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "syn"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -190,6 +196,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)" = "0c4b39bd9b0b087684013a792c59e3e07a46a01d2322518d8a1104641a0b1be0"
 "checksum serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)" = "ca13fc1a832f793322228923fbb3aba9f3f44444898f835d31ad1b74fa0a2bf8"
 "checksum serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)" = "2f72eb2a68a7dc3f9a691bfda9305a1c017a6215e5a4545c258500d2099a37c2"
+"checksum string-builder 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2bd10a070fb1f2796a288abec42695db4682a82b6f12ffacd60fb8d5ad3a4a12"
 "checksum syn 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "661641ea2aa15845cddeb97dad000d22070bb5c1fb456b96c1cba883ec691e92"
 "checksum time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "db8dcfca086c1143c9270ac42a2bbd8a7ee477b78ac8e45b19abfb0cbede4b6f"
 "checksum tint 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7af24570664a3074673dbbf69a65bdae0ae0b72f2949b1adfbacb736ee4d6896"
