@@ -1,8 +1,5 @@
 use std::fs;
 
-extern crate tint;
-use tint::Color;
-
 use chrono::{Duration};
 
 use chronogrog::ProductionSchedule;
@@ -92,7 +89,7 @@ fn it_should_be_able_to_retrieve_an_available_resource_by_type() {
 fn it_should_be_able_to_convert_a_bpd_file_to_a_pla_file() {
     let ps = ProductionSchedule::new("tests/fixtures/productionSchedule.json");
 
-    let pla_format: String = ps.output_to_pla_format();
+    let pla_format: String = ps.get_string_in_pla_format();
 
     let contents = fs::read_to_string("tests/fixtures/simple_prod_schedule.pla")
                          .expect("Something went wrong reading the file");

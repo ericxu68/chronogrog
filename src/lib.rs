@@ -4,9 +4,6 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::iter::Iterator;
 
-extern crate tint;
-use tint::Color;
-
 extern crate chrono;
 use chrono::{NaiveDate, Duration};
 use chrono::format::ParseError;
@@ -147,6 +144,18 @@ pub struct PhaseInstance {
     duration: Duration,
 }
 
+impl PhaseInstance {
+    pub fn get_string_in_pla_format(&self) -> String {
+        let mut builder = Builder::default();
+        builder.append(format!("{}[{}] {}\n", util::get_space_indent(1), self.id, self.description));
+        builder.append(format!("{}color {}\n", util::get_space_indent(2), self.color_hex));
+        builder.append(format!("{}duration {}\n", util::get_space_indent(2), util::get_duration_in_hours(self.duration)));
+        builder.append("\n");
+
+        builder.string().unwrap()
+    }
+}
+
 #[derive(Clone, PartialEq, Debug)]
 pub struct Recipe {
     pub id: usize,
@@ -158,6 +167,19 @@ pub struct Recipe {
 impl Recipe {
     pub fn get_phase_iterator(&self) -> std::slice::Iter<PhaseInstance> {
         self.phases.iter()
+    }
+
+    pub fn get_string_in_pla_format(&self) -> String {
+        let mut builder: Builder = Builder::default();
+        builder.append(format!("[{}] {}\n", self.id, self.name));
+
+        for next_phase in self.get_phase_iterator() {
+            builder.append(format!("{}child {}\n", util::get_space_indent(1), next_phase.id));
+        }
+
+        builder.append("\n");
+
+        builder.string().unwrap()
     }
 }
 
@@ -271,22 +293,13 @@ impl ProductionSchedule {
         self.recipes.iter()
     }
 
-    pub fn output_to_pla_format(&self) -> String {
+    pub fn get_string_in_pla_format(&self) -> String {
         let mut builder = Builder::default();
         for next_recipe in self.get_recipe_iterator() {
-            builder.append(format!("[{}] {}\n", next_recipe.id, next_recipe.name));
+            builder.append(next_recipe.get_string_in_pla_format());
 
             for next_phase in next_recipe.get_phase_iterator() {
-                builder.append(format!("{}child {}\n", util::get_space_indent(1), next_phase.id));
-            }
-
-            builder.append("\n");
-
-            for next_phase in next_recipe.get_phase_iterator() {
-                builder.append(format!("{}[{}] {}\n", util::get_space_indent(1), next_phase.id, next_phase.description));
-                builder.append(format!("{}color {}\n", util::get_space_indent(2), next_phase.color_hex));
-                builder.append(format!("{}duration {}\n", util::get_space_indent(2), util::get_duration_in_hours(next_phase.duration)));
-                builder.append("\n");
+                builder.append(next_phase.get_string_in_pla_format());
             }
         }
 
