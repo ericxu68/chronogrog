@@ -66,11 +66,10 @@ fn the_simple_production_schedule_should_include_six_resources() {
 
 #[test]
 fn it_should_be_able_to_retrieve_recipes_by_name_and_id() {
-    let mut ps = ProductionSchedule::new("tests/fixtures/productionSchedule.json");
+    let ps = ProductionSchedule::new("tests/fixtures/productionSchedule.json");
 
     let damned_squirrel = ps.get_recipe_by_name("Damned Squirrel Mk. II").unwrap();
     assert_eq!(damned_squirrel.name, "Damned Squirrel Mk. II");
-    assert_eq!(Color::from_rgb255(122, 86, 36), damned_squirrel.color);
 
     // let damned_squirrel2 = ps.get_recipe_by_id(damned_squirrel.id).unwrap();
     // assert_eq!(damned_squirrel, damned_squirrel2);

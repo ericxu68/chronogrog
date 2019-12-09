@@ -94,7 +94,8 @@
       "start": "2020-01-01",
       "phases": [
         {
-          "template": "planning"
+          "template": "planning",
+          "duration": "4h"
         },
         {
           "template": "brewing",

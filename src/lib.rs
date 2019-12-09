@@ -17,6 +17,8 @@ use serde::{Deserializer, Serializer};
 extern crate string_builder;
 use string_builder::Builder;
 
+mod util;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum ResourceType {
     Fermentor,
@@ -78,6 +80,10 @@ pub struct ProductionPhaseTemplate {
     pub id: String,
     pub order: usize,
 
+    #[serde(rename="color")]
+    #[serde(default = "String::new")]
+    color_hex: String,
+
     #[serde(rename="defaultDuration")]
     #[serde(default = "String::new")]
     default_duration: String
@@ -85,31 +91,7 @@ pub struct ProductionPhaseTemplate {
 
 impl ProductionPhaseTemplate {
     pub fn default_duration(&self) -> Option<Duration> {
-        let mut characters: Vec<_> = self.default_duration.chars().collect();
-        let mut identifier = None;
-        if characters.len() > 0 {
-            let last_character = characters[characters.len()- 1];
-            let is_last_character_digit = last_character.to_string().parse::<usize>().is_ok();
-            identifier = Some('d');
-            if !is_last_character_digit {
-                identifier = characters.pop();
-            }
-        }
-
-        match identifier {
-            Some(x) => {
-                let digit_string: String = characters.into_iter().collect();
-                let digits: i64 = digit_string.parse::<i64>().unwrap();
-                match x {
-                    'm' => Some(Duration::days(digits*30)),
-                    'w' => Some(Duration::weeks(digits)),
-                    'd' => Some(Duration::days(digits)),
-                    'h' => Some(Duration::hours(digits)),
-                    _ => None
-                }
-            },
-            None => None
-        }
+        util::convert_string_to_duration(&self.default_duration[..])
     }
 }
 
@@ -122,6 +104,60 @@ pub struct ProductionTimeline {
 impl ProductionTimeline {
     pub fn start_date(&self) -> std::result::Result<NaiveDate, ParseError> {
         NaiveDate::parse_from_str(self.start.as_str(), "%Y-%m-%d")
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct PhaseInstanceSpec {
+    #[serde(default = "String::new")]
+    description: String,
+
+    template: String,
+
+    #[serde(rename = "duration")]
+    #[serde(default = "String::new")]
+    duration_string: String
+}
+
+impl PhaseInstanceSpec {
+    pub fn duration(&self) -> Option<Duration> {
+        match self.duration_string.is_empty() {
+            true => None,
+            false => util::convert_string_to_duration(&self.duration_string[..])
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct RecipeSpec {
+    pub name: String,
+
+    #[serde(rename="color")]
+    pub color_hex: String,
+
+    #[serde(rename="phases")]
+    pub phase_specs: Vec<PhaseInstanceSpec>
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct PhaseInstance {
+    pub description: String,
+    pub id: usize,
+    pub color_hex: String,
+    duration: Duration,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct Recipe {
+    pub id: usize,
+    pub name: String,
+    pub color: String,
+    pub phases: Vec<PhaseInstance>
+}
+
+impl Recipe {
+    pub fn get_phase_iterator(&self) -> std::slice::Iter<PhaseInstance> {
+        self.phases.iter()
     }
 }
 
@@ -241,13 +277,23 @@ impl ProductionSchedule {
             builder.append(format!("[{}] {}\n", next_recipe.id, next_recipe.name));
 
             for next_phase in next_recipe.get_phase_iterator() {
-                let indent = 1;
+                builder.append(format!("{}child {}\n", util::get_space_indent(1), next_phase.id));
+            }
 
-                builder.append(format!("{}child {}\n", " ".repeat(indent * 2), next_phase.id));
+            builder.append("\n");
+
+            for next_phase in next_recipe.get_phase_iterator() {
+                builder.append(format!("{}[{}] {}\n", util::get_space_indent(1), next_phase.id, next_phase.description));
+                builder.append(format!("{}color {}\n", util::get_space_indent(2), next_phase.color_hex));
+                builder.append(format!("{}duration {}\n", util::get_space_indent(2), util::get_duration_in_hours(next_phase.duration)));
+                builder.append("\n");
             }
         }
 
-        builder.string().unwrap()
+        let final_pla: String = builder.string().unwrap();
+
+        // Remove the last newline at the end of the file, as it's unnecessary
+        final_pla[..final_pla.len() - 1].to_string()
     }
 
     fn get_next_id(&mut self) -> usize {
@@ -263,7 +309,7 @@ impl ProductionSchedule {
             let mut recipe_template: Recipe = Recipe {
                 id: self.get_next_id(),
                 name: next_recipe_spec.name.clone(),
-                color: next_recipe_spec.color(),
+                color: next_recipe_spec.color_hex.clone(),
                 phases: vec![]
             };
 
@@ -280,53 +326,42 @@ impl ProductionSchedule {
 
         for next_spec in recipe_spec.phase_specs.iter() {
             let id: usize = self.get_next_id();
+
+            // If the duration is specified in the spec, use that duration.
+            // Otherwise, use the default duration by looking up from the template.
+            let mut dur: Option<Duration> = next_spec.duration();
+            dur = match dur {
+                Some(x) => Some(x),
+                None => {
+                    let template: ProductionPhaseTemplate = self.get_phase_by_id(&next_spec.template[..]).unwrap();
+                    template.default_duration()
+                }
+            };
+
+            // If the description is specified in the spec, use that description.
+            // Otherwise, use the description by looking up from the template.
+            let mut description: String = next_spec.description.clone();
+            description = match description.is_empty()  {
+                true => {
+                    let template: ProductionPhaseTemplate = self.get_phase_by_id(&next_spec.template[..]).unwrap();
+                    template.description
+                },
+                false => description
+            };
+
             phases.push(PhaseInstance {
-                id: id
+                description: description,
+                id: id,
+                color_hex: recipe_spec.color_hex.clone(),
+                duration: match dur {
+                    Some(x) => x,
+
+                    // Default to a single day if nothing else works
+                    None => Duration::days(1)
+                }
             });
         }
 
         phases
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct PhaseInstanceSpec {
-    template: String
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct RecipeSpec {
-    pub name: String,
-
-    #[serde(rename="color")]
-    pub color_hex: String,
-
-    #[serde(rename="phases")]
-    pub phase_specs: Vec<PhaseInstanceSpec>
-}
-
-impl RecipeSpec {
-    pub fn color(&self) -> Color {
-        Color::from(&self.color_hex)
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct PhaseInstance {
-    pub id: usize
-    // duration: Duration
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct Recipe {
-    pub id: usize,
-    pub name: String,
-    pub color: Color,
-    pub phases: Vec<PhaseInstance>
-}
-
-impl Recipe {
-    pub fn get_phase_iterator(&self) -> std::slice::Iter<PhaseInstance> {
-        self.phases.iter()
     }
 }

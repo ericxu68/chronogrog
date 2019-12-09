@@ -5,3 +5,27 @@
   child 5
   child 6
   child 7
+
+  [2] Planning
+    color #7A5624
+    duration 4
+
+  [3] Brewing
+    color #7A5624
+    duration 24
+
+  [4] Primary Fermentation
+    color #7A5624
+    duration 792
+
+  [5] Secondary Fermentation
+    color #7A5624
+    duration 1536
+
+  [6] Carbonation
+    color #7A5624
+    duration 240
+
+  [7] Available to Drink
+    color #7A5624
+    duration 4320
