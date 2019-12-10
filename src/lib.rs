@@ -9,88 +9,22 @@ use chrono::{NaiveDate, Duration};
 use chrono::format::ParseError;
 
 use serde::{Deserialize, Serialize};
-use serde::{Deserializer, Serializer};
 
 extern crate string_builder;
 use string_builder::Builder;
 
-mod util;
+pub mod util;
+pub mod resources;
+use resources::ResourceType;
+use resources::Resource;
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum ResourceType {
-    Fermentor,
-    Kettle,
-    MashTun,
-    LauterTun,
-    Keg,
-    Kegerator,
-    Other(String)
-}
+pub mod phases;
+use phases::PhaseInstance;
+use phases::ProductionPhaseTemplate;
 
-impl<'de> Deserialize<'de> for ResourceType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de> {
-            let s = String::deserialize(deserializer)?;
-            Ok(match s.as_str() {
-                "fermentor" => ResourceType::Fermentor,
-                "kettle" => ResourceType::Kettle,
-                "mashtun" => ResourceType::MashTun,
-                "lautertun" => ResourceType::LauterTun,
-                "keg" => ResourceType::Keg,
-                "kegerator" => ResourceType::Kegerator,
-                _ => ResourceType::Other(s)
-            })
-    }
-}
-
-impl Serialize for ResourceType {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where S: Serializer
-    {
-        serializer.serialize_str(match *self {
-            ResourceType::Fermentor => "fermentor",
-            ResourceType::Kettle => "kettle",
-            ResourceType::MashTun => "mashtun",
-            ResourceType::LauterTun => "lautertun",
-            ResourceType::Keg => "keg",
-            ResourceType::Kegerator => "kegerator",
-            ResourceType::Other(ref other) => other
-        })
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct Resource {
-    pub id: usize,
-    pub name: String,
-
-    #[serde(rename="type")]
-    pub resource_type: ResourceType,
-
-    #[serde(rename="capacity")]
-    pub capacity_str: String
-}
-
-#[derive(Serialize, Deserialize, Default, Clone, PartialEq, Debug)]
-pub struct ProductionPhaseTemplate {
-    pub description: String,
-    pub id: String,
-    pub order: usize,
-
-    #[serde(rename="color")]
-    #[serde(default = "String::new")]
-    color_hex: String,
-
-    #[serde(rename="defaultDuration")]
-    #[serde(default = "String::new")]
-    default_duration: String
-}
-
-impl ProductionPhaseTemplate {
-    pub fn default_duration(&self) -> Option<Duration> {
-        util::convert_string_to_duration(&self.default_duration[..])
-    }
-}
+pub mod recipes;
+use recipes::RecipeSpec;
+use recipes::Recipe;
 
 #[derive(Serialize, Deserialize)]
 pub struct ProductionTimeline {
@@ -101,85 +35,6 @@ pub struct ProductionTimeline {
 impl ProductionTimeline {
     pub fn start_date(&self) -> std::result::Result<NaiveDate, ParseError> {
         NaiveDate::parse_from_str(self.start.as_str(), "%Y-%m-%d")
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct PhaseInstanceSpec {
-    #[serde(default = "String::new")]
-    description: String,
-
-    template: String,
-
-    #[serde(rename = "duration")]
-    #[serde(default = "String::new")]
-    duration_string: String
-}
-
-impl PhaseInstanceSpec {
-    pub fn duration(&self) -> Option<Duration> {
-        match self.duration_string.is_empty() {
-            true => None,
-            false => util::convert_string_to_duration(&self.duration_string[..])
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct RecipeSpec {
-    pub name: String,
-
-    #[serde(rename="color")]
-    pub color_hex: String,
-
-    #[serde(rename="phases")]
-    pub phase_specs: Vec<PhaseInstanceSpec>
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct PhaseInstance {
-    pub description: String,
-    pub id: usize,
-    pub color_hex: String,
-    duration: Duration,
-}
-
-impl PhaseInstance {
-    pub fn get_string_in_pla_format(&self) -> String {
-        let mut builder = Builder::default();
-        builder.append(format!("{}[{}] {}\n", util::get_space_indent(1), self.id, self.description));
-        builder.append(format!("{}color {}\n", util::get_space_indent(2), self.color_hex));
-        builder.append(format!("{}duration {}\n", util::get_space_indent(2), util::get_duration_in_hours(self.duration)));
-        builder.append("\n");
-
-        builder.string().unwrap()
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct Recipe {
-    pub id: usize,
-    pub name: String,
-    pub color: String,
-    pub phases: Vec<PhaseInstance>
-}
-
-impl Recipe {
-    pub fn get_phase_iterator(&self) -> std::slice::Iter<PhaseInstance> {
-        self.phases.iter()
-    }
-
-    pub fn get_string_in_pla_format(&self) -> String {
-        let mut builder: Builder = Builder::default();
-        builder.append(format!("[{}] {}\n", self.id, self.name));
-
-        for next_phase in self.get_phase_iterator() {
-            builder.append(format!("{}child {}\n", util::get_space_indent(1), next_phase.id));
-        }
-
-        builder.append("\n");
-
-        builder.string().unwrap()
     }
 }
 

@@ -3,8 +3,8 @@ use std::fs;
 use chrono::{Duration};
 
 use chronogrog::ProductionSchedule;
-use chronogrog::ProductionPhaseTemplate;
-use chronogrog::ResourceType;
+use chronogrog::phases::ProductionPhaseTemplate;
+use chronogrog::resources::ResourceType;
 
 #[test]
 fn it_should_load_a_json_file_into_a_new_production_schedule() {
