@@ -31,12 +31,12 @@ impl Recipe {
         self.phases.iter()
     }
 
-    pub fn get_string_in_pla_format(&self) -> String {
+    pub fn get_string_in_pla_format(&self, initial_indent: usize) -> String {
         let mut builder: Builder = Builder::default();
         builder.append(format!("[{}] {}\n", self.id, self.name));
 
         for next_phase in self.get_phase_iterator() {
-            builder.append(format!("{}child {}\n", get_space_indent(1), next_phase.id));
+            builder.append(format!("{}child {}\n", get_space_indent(initial_indent), next_phase.id));
         }
 
         builder.append("\n");

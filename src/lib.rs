@@ -151,10 +151,10 @@ impl ProductionSchedule {
     pub fn get_string_in_pla_format(&self) -> String {
         let mut builder = Builder::default();
         for next_recipe in self.get_recipe_iterator() {
-            builder.append(next_recipe.get_string_in_pla_format());
+            builder.append(next_recipe.get_string_in_pla_format(1));
 
             for next_phase in next_recipe.get_phase_iterator() {
-                builder.append(next_phase.get_string_in_pla_format());
+                builder.append(next_phase.get_string_in_pla_format(1));
             }
         }
 
@@ -217,19 +217,36 @@ impl ProductionSchedule {
                 false => description
             };
 
-            phases.push(PhaseInstance {
-                description: description,
-                id: id,
-                color_hex: recipe_spec.color_hex.clone(),
-                duration: match dur {
-                    Some(x) => x,
+            let duration: Duration = match dur {
+                Some(x) => x,
 
-                    // Default to a single day if nothing else works
-                    None => Duration::days(1)
-                }
-            });
+                // Default to a single day if nothing else works
+                None => Duration::days(1)
+            };
+
+
+            phases.push(PhaseInstance::new(id, description, recipe_spec.color_hex.clone(),
+                                           duration));
         }
 
-        phases
+        // We have to actally run through the phases from the back and add the next phase id
+        // as a dependency to the previous phase id. This is a weird nuance of pla that tasks X
+        // that are dependent on some task Y are actually defined in the definition of Y, not X. It
+        // basically means you have to specify that there will be defined a task with id X, but
+        // that task hasn't been defined yet.
+        let mut phases_new : Vec<PhaseInstance> = vec![];
+        let mut prev_phase_id : usize = 0;
+        for next_phase in phases.iter().rev() {
+            let mut phase = next_phase.clone();
+            if prev_phase_id > 0 {
+                phase.add_dependency(prev_phase_id);
+            }
+
+            prev_phase_id = phase.id;
+
+            phases_new.push(phase);
+        }
+
+        phases_new.into_iter().rev().collect()
     }
 }

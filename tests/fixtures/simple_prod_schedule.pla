@@ -9,22 +9,27 @@
   [2] Planning
     color #7A5624
     duration 4
+    dep 3
 
   [3] Brewing
     color #7A5624
     duration 24
+    dep 4
 
   [4] Primary Fermentation
     color #7A5624
     duration 792
+    dep 5
 
   [5] Secondary Fermentation
     color #7A5624
     duration 1536
+    dep 6
 
   [6] Carbonation
     color #7A5624
     duration 240
+    dep 7
 
   [7] Available to Drink
     color #7A5624

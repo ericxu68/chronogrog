@@ -36,10 +36,11 @@ pub struct PhaseInstanceSpec {
 
     #[serde(rename = "duration")]
     #[serde(default = "String::new")]
-    pub duration_string: String
+    pub duration_string: String,
 }
 
 impl PhaseInstanceSpec {
+
     pub fn duration(&self) -> Option<Duration> {
         match self.duration_string.is_empty() {
             true => None,
@@ -50,18 +51,43 @@ impl PhaseInstanceSpec {
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct PhaseInstance {
-    pub description: String,
     pub id: usize,
+    pub description: String,
     pub color_hex: String,
     pub duration: Duration,
+    pub dependencies: Vec<usize>
 }
 
 impl PhaseInstance {
-    pub fn get_string_in_pla_format(&self) -> String {
+    pub fn new(id: usize, description: String, color_hex: String, duration: Duration) -> Self {
+        PhaseInstance{
+            description: description,
+            id: id,
+            color_hex: color_hex,
+            duration: duration,
+            dependencies: vec![]
+        }
+    }
+
+    pub fn add_dependency(&mut self, dep: usize) {
+        if !self.dependencies.clone().into_iter().any(|d| d == dep) {
+            let mut dependencies: Vec<usize> = self.dependencies.clone();
+            dependencies.push(dep);
+            dependencies.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            self.dependencies = dependencies;
+        }
+    }
+
+    pub fn get_string_in_pla_format(&self, initial_indent: usize) -> String {
         let mut builder = Builder::default();
-        builder.append(format!("{}[{}] {}\n", get_space_indent(1), self.id, self.description));
-        builder.append(format!("{}color {}\n", get_space_indent(2), self.color_hex));
-        builder.append(format!("{}duration {}\n", get_space_indent(2), get_duration_in_hours(self.duration)));
+        builder.append(format!("{}[{}] {}\n", get_space_indent(initial_indent), self.id, self.description));
+        builder.append(format!("{}color {}\n", get_space_indent(initial_indent + 1), self.color_hex));
+        builder.append(format!("{}duration {}\n", get_space_indent(initial_indent + 1), get_duration_in_hours(self.duration)));
+
+        for next_dependency in self.dependencies.iter() {
+            builder.append(format!("{}dep {}\n", get_space_indent(2), next_dependency));
+        }
+
         builder.append("\n");
 
         builder.string().unwrap()
