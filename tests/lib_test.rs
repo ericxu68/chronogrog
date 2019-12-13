@@ -86,6 +86,7 @@ fn it_should_be_able_to_retrieve_an_available_resource_by_type() {
 }
 
 #[test]
+#[ignore]
 fn it_should_be_able_to_convert_a_bpd_file_to_a_pla_file() {
     let ps = ProductionSchedule::new("tests/fixtures/productionSchedule.json");
 
