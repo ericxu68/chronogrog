@@ -1,3 +1,9 @@
+extern crate chrono;
+use chrono::Duration;
+use chrono::NaiveDate;
+
+use chronogrog::resources::Resource;
+use chronogrog::resources::ResourceTracker;
 use chronogrog::resources::ResourceType;
 
 extern crate serde_test;
@@ -50,4 +56,65 @@ fn test_ser_de_resourcetype() {
     assert_tokens(&other, &[
         Token::Str("fancythingy")
     ]);
+}
+
+#[test]
+fn it_should_track_a_resource() {
+    let mut tracker: ResourceTracker = ResourceTracker::new();
+    let resource1: Resource = Resource {
+        id: 2008,
+        resource_type: ResourceType::Kettle,
+        capacity_str: "15g".to_string(),
+        name: "Large Kettle".to_string()
+    };
+
+    let resource1_copy = resource1.clone();
+
+    tracker.track_resource(resource1);
+
+    let current_date: NaiveDate = NaiveDate::from_ymd(2019, 01, 01);
+
+    let allocated_resource : Resource =
+      tracker.allocate_resource_of_type_for_duration(ResourceType::Kettle, current_date,
+                                                     Duration::days(10)).unwrap();
+    assert_eq!(resource1_copy, allocated_resource);
+    assert_eq!(current_date.checked_add_signed(Duration::days(10)),
+               tracker.next_available_resource_date_for_type(ResourceType::Kettle));
+
+    let allocated_resource2 : Option<Resource> =
+        tracker.allocate_resource_of_type_for_duration(ResourceType::Kettle, current_date,
+                                                       Duration::days(10));
+    assert_eq!(None, allocated_resource2);
+}
+
+#[test]
+fn it_should_return_the_earliest_free_date_for_a_resource_of_a_type() {
+    let mut tracker: ResourceTracker = ResourceTracker::new();
+    let resource1: Resource = Resource {
+        id: 2008,
+        resource_type: ResourceType::Kettle,
+        capacity_str: "15g".to_string(),
+        name: "Large Kettle".to_string()
+    };
+
+    let resource2: Resource = Resource {
+        id: 2009,
+        resource_type: ResourceType::Kettle,
+        capacity_str: "15g".to_string(),
+        name: "Large Kettle No. 2".to_string()
+    };
+
+    tracker.track_resource(resource1);
+    tracker.track_resource(resource2);
+
+    let current_date: NaiveDate = NaiveDate::from_ymd(2019, 01, 01);
+
+    tracker.allocate_resource_of_type_for_duration(ResourceType::Kettle, current_date,
+                                                   Duration::days(10)).unwrap();
+
+    tracker.allocate_resource_of_type_for_duration(ResourceType::Kettle, current_date,
+                                                   Duration::days(20)).unwrap();
+
+    assert_eq!(current_date.checked_add_signed(Duration::days(10)),
+               tracker.next_available_resource_date_for_type(ResourceType::Kettle));
 }
