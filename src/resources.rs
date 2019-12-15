@@ -1,5 +1,5 @@
 use chrono::Duration;
-use chrono::NaiveDate;
+use chrono::NaiveDateTime;
 
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
@@ -168,9 +168,9 @@ pub struct PossiblyAllocatedResource {
     /// A borrowed reference to the `Resource` that is currently in use.
     pub resource: Resource,
 
-    /// The `NaiveDate` upon which the `Resource` will be free again. Given the current
-    /// `NaiveDate`, `c`, if `free_date` is on or before `c`, the `Resource` should be freed.
-    pub free_date: NaiveDate
+    /// The `NaiveDateTime` upon which the `Resource` will be free again. Given the current
+    /// `NaiveDateTime`, `c`, if `free_date` is on or before `c`, the `Resource` should be freed.
+    pub free_date: NaiveDateTime
 }
 
 /// Tracking mechanism for `Resource`s.
@@ -229,8 +229,8 @@ impl ResourceTracker {
         self.free_resources.insert(res.id, res);
     }
 
-    /// Retrieve the next [NaiveDate](chrono::NaiveDate) at which a `Resource` of a specific
-    /// `ResourceType` will be free.
+    /// Retrieve the next [NaiveDateTime](chrono::NaiveDateTime) at which a `Resource` of a
+    /// specific `ResourceType` will be free.
     ///
     /// # Arguments
     ///
@@ -239,20 +239,20 @@ impl ResourceTracker {
     /// # Returns
     ///
     /// * An `Option` containing one of the following values:
-    ///   * `Some`: Contains an instance of type [NaiveDate](chrono::NaiveDate) that represents the
-    ///     closest date at which a `Resource` of type `resource_type` will be free, if there is
-    ///     at least one `Resource` of type `resource_type` allocated.
+    ///   * `Some`: Contains an instance of type [NaiveDateTime](chrono::NaiveDateTime) that
+    ///     represents the closest date at which a `Resource` of type `resource_type` will be free,
+    ///     if there is at least one `Resource` of type `resource_type` allocated.
     ///   * `None`: If there are no `Resource`s of type `resource_type` allocated.
     ///
-    pub fn next_available_resource_date_for_type(&mut self, current_date: NaiveDate,
+    pub fn next_available_resource_date_for_type(&mut self, current_date: NaiveDateTime,
                                                  resource_type : ResourceType)
-      -> Option<NaiveDate> {
+      -> Option<NaiveDateTime> {
 
       self.refresh(current_date);
 
       match self.free_resources.iter().find(|x| x.1.resource_type == resource_type) {
           Some(_x) => return Some(current_date),
-          None => None::<NaiveDate> // essentially a noop
+          None => None::<NaiveDateTime> // essentially a noop
       };
 
       let allocated_of_type : Vec<PossiblyAllocatedResource> =
@@ -275,8 +275,9 @@ impl ResourceTracker {
     ///
     /// # Arguments
     /// * `resource_type`: A [ResourceType](ResourceType) to query for.
-    /// * `start_date`: The [NaiveDate](chrono::NaiveDate) at which the allocation of the first
-    ///   encountered instance of an unallocated `Resource` of type `resource_type` should begin.
+    /// * `start_date`: The [NaiveDateTime](chrono::NaiveDateTime) at which the allocation of the
+    ///   first encountered instance of an unallocated `Resource` of type `resource_type` should
+    ///   begin.
     /// * `duration`: A [Duration](chrono::Duration) for which the `Resource` will be allocated.
     ///
     /// # Returns
@@ -284,7 +285,7 @@ impl ResourceTracker {
     ///   `Resource`), if there is a free `Resource` of type `resource_type`; otherwise `None`.
     ///
     pub fn allocate_resource_of_type_for_duration(&mut self, resource_type: ResourceType,
-                                                  start_date: NaiveDate,
+                                                  start_date: NaiveDateTime,
                                                   duration: Duration) -> Option<&Resource> {
         self.refresh(start_date);
 
@@ -301,7 +302,7 @@ impl ResourceTracker {
         }
     }
 
-    fn move_resource_to_allocated_list(&mut self, res: &Resource, free_date: NaiveDate) {
+    fn move_resource_to_allocated_list(&mut self, res: &Resource, free_date: NaiveDateTime) {
         self.free_resources.remove(&res.id);
         self.allocated_resources.insert(res.id, PossiblyAllocatedResource {
             resource: res.clone(),
@@ -314,7 +315,7 @@ impl ResourceTracker {
         self.free_resources.insert(res.id, res.clone());
     }
 
-    fn refresh(&mut self, current_date: NaiveDate) {
+    fn refresh(&mut self, current_date: NaiveDateTime) {
         let collected: Vec<Resource> = self.allocated_resources.iter()
           .filter(|pair| pair.1.free_date.cmp(&current_date) == Ordering::Less)
           .map(|pair| pair.1.resource.clone())

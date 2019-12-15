@@ -1,6 +1,6 @@
 extern crate chrono;
 use chrono::Duration;
-use chrono::NaiveDate;
+use chrono::NaiveDateTime;
 
 use chronogrog::resources::Resource;
 use chronogrog::resources::ResourceTracker;
@@ -72,7 +72,8 @@ fn it_should_track_a_resource() {
 
     tracker.track_resource(resource1);
 
-    let current_date: NaiveDate = NaiveDate::from_ymd(2019, 01, 01);
+    let current_date: NaiveDateTime = NaiveDateTime::parse_from_str("2019-01-01 00:00:00",
+                                                                    "%Y-%m-%d %H:%M:%S").unwrap();
 
     let allocated_resource : &Resource =
       tracker.allocate_resource_of_type_for_duration(ResourceType::Kettle, current_date,
@@ -107,7 +108,8 @@ fn it_should_return_the_earliest_free_date_for_a_resource_of_a_type() {
     tracker.track_resource(resource1);
     tracker.track_resource(resource2);
 
-    let current_date: NaiveDate = NaiveDate::from_ymd(2019, 01, 01);
+    let current_date: NaiveDateTime = NaiveDateTime::parse_from_str("2019-01-01 00:00:00",
+                                                                    "%Y-%m-%d %H:%M:%S").unwrap();
 
     tracker.allocate_resource_of_type_for_duration(ResourceType::Kettle, current_date,
                                                    Duration::days(10)).unwrap();
@@ -131,7 +133,8 @@ fn it_should_return_none_for_the_earliest_free_date_when_no_resources_are_alloca
 
     tracker.track_resource(resource1);
 
-    let current_date: NaiveDate = NaiveDate::from_ymd(2019, 01, 01);
+    let current_date: NaiveDateTime = NaiveDateTime::parse_from_str("2019-01-01 00:00:00",
+                                                                    "%Y-%m-%d %H:%M:%S").unwrap();
 
     assert_eq!(None, tracker.next_available_resource_date_for_type(current_date,
                                                                    ResourceType::Fermentor));
@@ -150,14 +153,18 @@ fn it_should_return_a_resource_as_free_after_the_free_date() {
     let resource1_copy = resource1.clone();
     tracker.track_resource(resource1);
 
-    let mut current_date: NaiveDate = NaiveDate::from_ymd(2019, 01, 01);
+    let mut current_date: NaiveDateTime = NaiveDateTime::parse_from_str("2019-01-01 00:00:00",
+                                                                        "%Y-%m-%d %H:%M:%S")
+                                                                        .unwrap();
 
     let mut allocated = tracker.allocate_resource_of_type_for_duration(ResourceType::Kettle,
                                                                        current_date,
                                                                        Duration::days(10)).unwrap();
     assert_eq!(resource1_copy.id, allocated.id);
 
-    current_date = NaiveDate::from_ymd(2019, 01, 12);
+    current_date = NaiveDateTime::parse_from_str("2019-01-12 00:00:00",
+                                                 "%Y-%m-%d %H:%M:%S").unwrap();
+
 
     allocated = tracker.allocate_resource_of_type_for_duration(ResourceType::Kettle,
                                                                current_date,
