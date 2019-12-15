@@ -15,8 +15,9 @@ use string_builder::Builder;
 
 pub mod util;
 pub mod resources;
-use resources::ResourceType;
 use resources::Resource;
+use resources::ResourceTracker;
+use resources::ResourceType;
 
 pub mod phases;
 use phases::PhaseInstance;
@@ -46,7 +47,11 @@ pub struct ProductionSchedule {
 
     #[serde(rename="phaseTemplates")]
     pub phase_templates: Vec<ProductionPhaseTemplate>,
-    pub resources: Vec<Resource>,
+
+    // XXX_jwir3: Note that this is _only_ for deserialization. It is not for usage after the
+    //            object has been deserialized from JSON, because resources are tracked within the
+    //            ResourceTracker instance.
+    resources: Vec<Resource>,
 
     #[serde(skip_serializing, skip_deserializing)]
     recipes: Vec<Recipe>,
@@ -55,7 +60,10 @@ pub struct ProductionSchedule {
     pub recipe_specs: Vec<RecipeSpec>,
 
     #[serde(skip_serializing, skip_deserializing)]
-    last_id_used: usize
+    last_id_used: usize,
+
+    #[serde(skip_serializing, skip_deserializing, default = "ResourceTracker::new")]
+    tracker: ResourceTracker
 }
 
 impl ProductionSchedule {
@@ -80,6 +88,11 @@ impl ProductionSchedule {
     pub fn init(&mut self) {
         self.last_id_used = 0;
         self.rebuild_recipes_from_specs();
+        self.track_resources();
+    }
+
+    pub fn resources(&self) -> Vec<Resource> {
+        self.tracker.get_all_tracked_resources()
     }
 
     pub fn get_phase_by_id(&self, id: &str) -> Option<ProductionPhaseTemplate> {
@@ -248,5 +261,9 @@ impl ProductionSchedule {
         }
 
         phases_new.into_iter().rev().collect()
+    }
+
+    fn track_resources(&mut self) {
+        self.resources.clone().into_iter().for_each(|e| self.tracker.track_resource(e));
     }
 }

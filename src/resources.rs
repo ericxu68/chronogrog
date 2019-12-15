@@ -302,6 +302,13 @@ impl ResourceTracker {
         }
     }
 
+    pub fn get_all_tracked_resources(&self) -> Vec<Resource> {
+        self.allocated_resources.clone().into_iter()
+          .map(|r| r.1.resource)
+          .chain(self.free_resources.clone().into_iter().map(|r| r.1))
+          .collect()
+    }
+
     fn move_resource_to_allocated_list(&mut self, res: &Resource, free_date: NaiveDateTime) {
         self.free_resources.remove(&res.id);
         self.allocated_resources.insert(res.id, PossiblyAllocatedResource {
