@@ -74,14 +74,14 @@ fn it_should_track_a_resource() {
 
     let current_date: NaiveDate = NaiveDate::from_ymd(2019, 01, 01);
 
-    let allocated_resource : Resource =
+    let allocated_resource : &Resource =
       tracker.allocate_resource_of_type_for_duration(ResourceType::Kettle, current_date,
                                                      Duration::days(10)).unwrap();
-    assert_eq!(resource1_copy, allocated_resource);
+    assert_eq!(&resource1_copy, allocated_resource);
     assert_eq!(current_date.checked_add_signed(Duration::days(10)),
                tracker.next_available_resource_date_for_type(ResourceType::Kettle));
 
-    let allocated_resource2 : Option<Resource> =
+    let allocated_resource2 : Option<&Resource> =
         tracker.allocate_resource_of_type_for_duration(ResourceType::Kettle, current_date,
                                                        Duration::days(10));
     assert_eq!(None, allocated_resource2);

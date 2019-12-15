@@ -3,6 +3,8 @@ use chrono::NaiveDate;
 
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
+use std::collections::HashMap;
+
 #[derive(Clone, Debug, PartialEq)]
 
 /// Type of a particular resource.
@@ -182,10 +184,10 @@ pub struct PossiblyAllocatedResource {
 /// For unused `Resources`, a borrowed reference to the individual `Resource` is available.
 pub struct ResourceTracker {
     /// All `Resource` objects that are not currently in use
-    free_resources: Vec<Resource>,
+    free_resources: HashMap<usize, Resource>,
 
     /// Wrapped `Resource` objects that are in use (since the last refresh)
-    allocated_resources: Vec<PossiblyAllocatedResource>
+    allocated_resources: HashMap<usize, PossiblyAllocatedResource>
 }
 
 impl ResourceTracker {
@@ -199,13 +201,16 @@ impl ResourceTracker {
     ///
     /// # Notes
     ///
-    /// The `ResourceTracker` created is initially empty. It is necessary to add `Resource`s
-    /// manually using the [track_resource](ResourceTracker::track_resource) method.
-    //
+    /// - The `ResourceTracker` created is initially empty. It is necessary to add `Resource`s
+    ///   manually using the [track_resource](ResourceTracker::track_resource) method.
+    /// - The `ResourceTracker` tracks `Resource` objects by `id`. If a `Resource` object's `id` is
+    ///   the same as a `Resource` already being tracked, the previously tracked `Resource` will be
+    ///   dropped from the tracker.
+    ///
     pub fn new() -> Self {
         ResourceTracker {
-            free_resources: vec![],
-            allocated_resources: vec![]
+            free_resources: HashMap::new(),
+            allocated_resources: HashMap::new()
         }
     }
 
@@ -220,7 +225,7 @@ impl ResourceTracker {
     /// * `res`: A  `Resource` object to track within this `ResourceTracker`.
     ///
     pub fn track_resource(&mut self, res: Resource) {
-        self.free_resources.push(res);
+        self.free_resources.insert(res.id, res);
     }
 
     /// Retrieve the next [NaiveDate](chrono::NaiveDate) at which a `Resource` of a specific
@@ -244,7 +249,8 @@ impl ResourceTracker {
           //            resource_type already free.
       let allocated_of_type : Vec<PossiblyAllocatedResource> =
         self.allocated_resources.clone().into_iter()
-                                .filter(|r| r.resource.resource_type == resource_type)
+                                .filter(|p| p.1.resource.resource_type == resource_type)
+                                .map(|p| p.1)
                                 .collect();
       if allocated_of_type.is_empty() {
           return None;
@@ -271,23 +277,20 @@ impl ResourceTracker {
     ///
     pub fn allocate_resource_of_type_for_duration(&mut self, resource_type: ResourceType,
                                                   start_date: NaiveDate,
-                                                  duration: Duration) -> Option<Resource> {
-        let removed = self.free_resources.iter()
-                                         .position(|n| n.resource_type == resource_type)
-                                         .map(|e| self.free_resources.remove(e));
-
-        match removed {
+                                                  duration: Duration) -> Option<&Resource> {
+        let free_resources = self.free_resources.clone();
+        let to_remove: Option<(&usize, &Resource)>
+          = free_resources.iter()
+                               .find(|res| res.1.resource_type == resource_type);
+        match to_remove {
             Some(x) => {
-                let id : usize = x.id;
-                self.allocated_resources.push(PossiblyAllocatedResource {
-                resource: x,
-                free_date: start_date.checked_add_signed(duration).unwrap()
-            });
+                self.free_resources.remove(x.0);
+                self.allocated_resources.insert(x.1.id, PossiblyAllocatedResource {
+                    resource: x.1.clone(),
+                    free_date: start_date.checked_add_signed(duration).unwrap()
+                });
 
-            self.allocated_resources.clone()
-                                    .into_iter()
-                                    .map(|r| r.resource)
-                                    .find(|r| r.id == id)
+                Some(&self.allocated_resources.get(&x.1.id).unwrap().resource)
             },
             None => None
         }
