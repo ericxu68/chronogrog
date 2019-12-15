@@ -4,6 +4,7 @@ use chrono::NaiveDate;
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
 use std::collections::HashMap;
+use core::cmp::Ordering;
 
 #[derive(Clone, Debug, PartialEq)]
 
@@ -243,10 +244,17 @@ impl ResourceTracker {
     ///     at least one `Resource` of type `resource_type` allocated.
     ///   * `None`: If there are no `Resource`s of type `resource_type` allocated.
     ///
-    pub fn next_available_resource_date_for_type(&self, resource_type : ResourceType)
+    pub fn next_available_resource_date_for_type(&mut self, current_date: NaiveDate,
+                                                 resource_type : ResourceType)
       -> Option<NaiveDate> {
-          // XXX_jwir3: This should probably do something if there are resources of type
-          //            resource_type already free.
+
+      self.refresh(current_date);
+
+      match self.free_resources.iter().find(|x| x.1.resource_type == resource_type) {
+          Some(_x) => return Some(current_date),
+          None => None::<NaiveDate> // essentially a noop
+      };
+
       let allocated_of_type : Vec<PossiblyAllocatedResource> =
         self.allocated_resources.clone().into_iter()
                                 .filter(|p| p.1.resource.resource_type == resource_type)
@@ -278,21 +286,42 @@ impl ResourceTracker {
     pub fn allocate_resource_of_type_for_duration(&mut self, resource_type: ResourceType,
                                                   start_date: NaiveDate,
                                                   duration: Duration) -> Option<&Resource> {
+        self.refresh(start_date);
+
         let free_resources = self.free_resources.clone();
         let to_remove: Option<(&usize, &Resource)>
-          = free_resources.iter()
-                               .find(|res| res.1.resource_type == resource_type);
+          = free_resources.iter().find(|res| res.1.resource_type == resource_type);
         match to_remove {
             Some(x) => {
-                self.free_resources.remove(x.0);
-                self.allocated_resources.insert(x.1.id, PossiblyAllocatedResource {
-                    resource: x.1.clone(),
-                    free_date: start_date.checked_add_signed(duration).unwrap()
-                });
-
+                self.move_resource_to_allocated_list(x.1, start_date.checked_add_signed(duration)
+                                                                    .unwrap());
                 Some(&self.allocated_resources.get(&x.1.id).unwrap().resource)
             },
             None => None
+        }
+    }
+
+    fn move_resource_to_allocated_list(&mut self, res: &Resource, free_date: NaiveDate) {
+        self.free_resources.remove(&res.id);
+        self.allocated_resources.insert(res.id, PossiblyAllocatedResource {
+            resource: res.clone(),
+            free_date: free_date
+        });
+    }
+
+    fn move_resource_to_free_list(&mut self, res: &Resource) {
+        self.allocated_resources.remove(&res.id);
+        self.free_resources.insert(res.id, res.clone());
+    }
+
+    fn refresh(&mut self, current_date: NaiveDate) {
+        let collected: Vec<Resource> = self.allocated_resources.iter()
+          .filter(|pair| pair.1.free_date.cmp(&current_date) == Ordering::Less)
+          .map(|pair| pair.1.resource.clone())
+          .collect();
+
+        for next_resource in collected {
+            self.move_resource_to_free_list(&next_resource);
         }
     }
 }
