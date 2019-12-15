@@ -3,9 +3,10 @@ use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
 use std::iter::Iterator;
+use std::error::Error;
 
 extern crate chrono;
-use chrono::{NaiveDate, Duration};
+use chrono::{Duration, NaiveDate, NaiveDateTime};
 use chrono::format::ParseError;
 
 use serde::{Deserialize, Serialize};
@@ -28,14 +29,41 @@ use recipes::RecipeSpec;
 use recipes::Recipe;
 
 #[derive(Serialize, Deserialize)]
+/// Configuration options for the timeline of the production schedule.
+///
+/// At some point in the future, we're going to allow for the gantt-chart-creation software to take
+/// configuration options that allow it to either start at a specific date and start counting from
+/// that date , or start at a specific number, and just count generic days. Currently, since the
+/// gantt-chart-creation part of the application does not include this, it's not implemented other
+/// than to create these configuration variables as part of deserialization.
+///
 pub struct ProductionTimeline {
     pub configuration: String,
-    pub start: String
+    start: String
 }
 
 impl ProductionTimeline {
-    pub fn start_date(&self) -> std::result::Result<NaiveDate, ParseError> {
-        NaiveDate::parse_from_str(self.start.as_str(), "%Y-%m-%d")
+    /// Retrieve the start date, as a `NaiveDateTime`.
+    ///
+    /// # Returns
+    /// * A `Result` containing either the starting date for the production schedule, as a
+    ///   [NaiveDateTime](chrono::NaiveDateTime), if the parsing was successful, or a `ParseError`
+    ///   explaining what happened.
+    ///
+    pub fn start_date(&self) -> std::result::Result<NaiveDateTime, ParseError> {
+        match NaiveDateTime::parse_from_str(self.start.as_str(), "%Y-%m-%d %H:%M:%S") {
+            Ok(x) => Ok(x),
+            Err(e) => {
+                if e.description() == "premature end of input" {
+                    match NaiveDate::parse_from_str(self.start.as_str(), "%Y-%m-%d") {
+                        Ok(x) => Ok(x.and_hms(0, 0, 0)),
+                        Err(e) => Err(e)
+                    }
+                } else {
+                    Err(e)
+                }
+            }
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 use std::fs;
 
-use chrono::{Duration};
+use chrono::{Duration, NaiveDateTime};
 
 use chronogrog::ProductionSchedule;
 use chronogrog::phases::ProductionPhaseTemplate;
@@ -13,6 +13,9 @@ fn it_should_load_a_json_file_into_a_new_production_schedule() {
     assert_eq!("Simple Production Schedule", ps.name);
     assert_eq!(1, ps.id);
     assert_eq!("calendar", ps.timeline.configuration);
+
+    let current_date = NaiveDateTime::parse_from_str("2020-01-01 00:00:00", "%Y-%m-%d %H:%M:%S");
+    assert_eq!(current_date, ps.timeline.start_date());
 }
 
 #[test]
