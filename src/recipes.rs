@@ -2,12 +2,20 @@ use string_builder::Builder;
 
 use serde::{Serialize, Deserialize};
 
+use chrono::{NaiveDateTime, ParseError};
+
 use super::phases::PhaseInstanceSpec;
 use super::phases::PhaseInstance;
 
-use super::util::get_space_indent;
+use super::util::{get_space_indent, get_naive_date_time_from_string};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+
+/// A specification for constructing instances of [Recipe](chronogrog::Recipe).
+///
+/// The specifications are translated from JSON in the form of a `recipes` block into actual
+/// `Recipe` instances. The `Recipe`s themselves can then be transformed into PLA format.
+///
 pub struct RecipeSpec {
     pub name: String,
 
@@ -15,7 +23,24 @@ pub struct RecipeSpec {
     pub color_hex: String,
 
     #[serde(rename="phases")]
-    pub phase_specs: Vec<PhaseInstanceSpec>
+    pub phase_specs: Vec<PhaseInstanceSpec>,
+
+    #[serde(rename="start")]
+    start_string: String
+}
+
+impl RecipeSpec {
+    /// Retrieve the start date of this `Recipe`, as a `NaiveDateTime`, if it can be parsed from
+    /// the input string.
+    ///
+    /// # Returns
+    /// * A `Result` containing either a `NaiveDateTime`, if one can be parsed from the
+    ///   deserialized string `start_string`, or a `ParseError` that lets the client know why the
+    ///   parsing failed.
+    ///
+    pub fn start_date(&self) -> Result<NaiveDateTime, ParseError> {
+        get_naive_date_time_from_string(&self.start_string[..])
+    }
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -23,7 +48,8 @@ pub struct Recipe {
     pub id: usize,
     pub name: String,
     pub color: String,
-    pub phases: Vec<PhaseInstance>
+    pub phases: Vec<PhaseInstance>,
+    pub start_date: NaiveDateTime
 }
 
 impl Recipe {

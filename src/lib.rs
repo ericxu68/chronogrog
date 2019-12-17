@@ -204,11 +204,19 @@ impl ProductionSchedule {
         let mut recipes_vec = vec![];
         let recipes = self.recipe_specs.clone();
         for next_recipe_spec in recipes {
+            let recipe_start_date: NaiveDateTime = match next_recipe_spec.start_date() {
+                Ok(x) => x,
+
+                // If the next line causes an error, there's no telling what we can do...
+                Err(_e) => self.timeline.start_date().unwrap()
+            };
+
             let mut recipe_template: Recipe = Recipe {
                 id: self.get_next_id(),
                 name: next_recipe_spec.name.clone(),
                 color: next_recipe_spec.color_hex.clone(),
-                phases: vec![]
+                phases: vec![],
+                start_date: recipe_start_date
             };
 
             recipe_template.phases = self.rebuild_phases_from_specs(&next_recipe_spec);
