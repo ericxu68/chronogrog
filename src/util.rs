@@ -1,4 +1,6 @@
-use chrono::Duration;
+use std::error::Error;
+
+use chrono::{Duration, NaiveDate, NaiveDateTime, ParseError};
 
 pub fn convert_string_to_duration(duration_string: &str) -> Option<Duration> {
     let mut characters: Vec<_> = duration_string.chars().collect();
@@ -25,6 +27,38 @@ pub fn convert_string_to_duration(duration_string: &str) -> Option<Duration> {
             }
         },
         None => None
+    }
+}
+
+/// Try to convert a `String` to a `NativeDateTime`.
+///
+/// # Arguments
+/// * `date_string`: A string slice containing either a `NaiveDateTime` in `YYYY-MM-DD HH:MM:SS`
+///   format, or a `NaiveDate` in `YYYY-MM-DD` format.
+///
+/// # Returns
+/// * A `Result` containing either:
+///   - A `NaiveDateTime`, if one can be constructed from the given `&str`, or
+///   - A `ParseError` containing an explanation as to why the `NaiveDateTime` could not be
+///     constructed.
+///
+/// # Notes
+/// - If a `NaiveDate` is given (the string is in `YYYY-MM-DD` format instead of
+///   `YYYY-MM-DD HH:MM:SS`), then this will be converted to a `NaiveDateTime` at `00:00:00`.
+///
+pub fn get_naive_date_time_from_string(date_string: &str) -> Result<NaiveDateTime, ParseError> {
+    match NaiveDateTime::parse_from_str(date_string, "%Y-%m-%d %H:%M:%S") {
+        Ok(x) => Ok(x),
+        Err(e) => {
+            if e.description() == "premature end of input" {
+                match NaiveDate::parse_from_str(date_string, "%Y-%m-%d") {
+                    Ok(x) => Ok(x.and_hms(0, 0, 0)),
+                    Err(e) => Err(e)
+                }
+            } else {
+                Err(e)
+            }
+        }
     }
 }
 

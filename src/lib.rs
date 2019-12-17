@@ -3,10 +3,9 @@ use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
 use std::iter::Iterator;
-use std::error::Error;
 
 extern crate chrono;
-use chrono::{Duration, NaiveDate, NaiveDateTime};
+use chrono::{Duration, NaiveDateTime};
 use chrono::format::ParseError;
 
 use serde::{Deserialize, Serialize};
@@ -15,6 +14,8 @@ extern crate string_builder;
 use string_builder::Builder;
 
 pub mod util;
+use util::get_naive_date_time_from_string;
+
 pub mod resources;
 use resources::Resource;
 use resources::ResourceTracker;
@@ -51,19 +52,7 @@ impl ProductionTimeline {
     ///   explaining what happened.
     ///
     pub fn start_date(&self) -> std::result::Result<NaiveDateTime, ParseError> {
-        match NaiveDateTime::parse_from_str(self.start.as_str(), "%Y-%m-%d %H:%M:%S") {
-            Ok(x) => Ok(x),
-            Err(e) => {
-                if e.description() == "premature end of input" {
-                    match NaiveDate::parse_from_str(self.start.as_str(), "%Y-%m-%d") {
-                        Ok(x) => Ok(x.and_hms(0, 0, 0)),
-                        Err(e) => Err(e)
-                    }
-                } else {
-                    Err(e)
-                }
-            }
-        }
+        get_naive_date_time_from_string(&self.start[..])
     }
 }
 
