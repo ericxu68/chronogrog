@@ -1,6 +1,6 @@
 use std::fs;
 
-use chrono::{Duration, NaiveDateTime};
+use chrono::{Duration, NaiveDate, NaiveDateTime, NaiveTime};
 
 use chronogrog::ProductionSchedule;
 use chronogrog::phases::ProductionPhaseTemplate;
@@ -16,6 +16,16 @@ fn it_should_load_a_json_file_into_a_new_production_schedule() {
 
     let current_date = NaiveDateTime::parse_from_str("2020-01-01 00:00:00", "%Y-%m-%d %H:%M:%S");
     assert_eq!(current_date, ps.timeline.start_date());
+
+    // Verify that the recipe spec with name "Damned Squirrel Mk. II" appears and has a start date
+    // of 01-01-20.
+    println!("{:?}", ps.recipe_specs);
+    let damned_squirrel = ps.recipe_specs.clone().into_iter()
+                                         .find(|rs| rs.name == "Damned Squirrel Mk. II").unwrap();
+
+    assert_eq!(NaiveDateTime::new(NaiveDate::from_ymd(2020, 1, 1), NaiveTime::from_hms(0, 0, 0)),
+               damned_squirrel.start_date().unwrap());
+
 }
 
 #[test]

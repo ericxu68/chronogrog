@@ -104,6 +104,7 @@ impl ProductionSchedule {
 
     pub fn init(&mut self) {
         self.last_id_used = 0;
+        self.verify_recipe_start_dates();
         self.rebuild_recipes_from_specs();
         self.track_resources();
     }
@@ -198,6 +199,28 @@ impl ProductionSchedule {
         self.last_id_used += 1;
 
         self.last_id_used
+    }
+
+    fn verify_recipe_start_dates(&mut self) {
+        let mut new_recipe_vec: Vec<RecipeSpec> = vec![];
+
+        self.recipe_specs.clone().into_iter().for_each(|recipe_spec| {
+            match recipe_spec.start_string.clone() {
+                Some(_x) => new_recipe_vec.push(recipe_spec),
+                None => {
+                    let new_recipe_spec = RecipeSpec {
+                        name: recipe_spec.name,
+                        color_hex: recipe_spec.color_hex,
+                        phase_specs: recipe_spec.phase_specs,
+                        start_string: Some(self.timeline.start.clone())
+                    };
+
+                    new_recipe_vec.push(new_recipe_spec);
+                }
+            }
+
+            self.recipe_specs = new_recipe_vec.clone();
+        })
     }
 
     fn rebuild_recipes_from_specs(&mut self) {

@@ -91,7 +91,6 @@
       "name": "Damned Squirrel Mk. II",
       "color": "#7A5624",
       "batchSize": "10g",
-      "start": "2020-01-01",
       "phases": [
         {
           "template": "planning",

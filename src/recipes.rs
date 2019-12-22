@@ -2,7 +2,7 @@ use string_builder::Builder;
 
 use serde::{Serialize, Deserialize};
 
-use chrono::{NaiveDateTime, ParseError};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime, ParseError};
 
 use super::phases::PhaseInstanceSpec;
 use super::phases::PhaseInstance;
@@ -26,7 +26,7 @@ pub struct RecipeSpec {
     pub phase_specs: Vec<PhaseInstanceSpec>,
 
     #[serde(rename="start")]
-    start_string: String
+    pub start_string: Option<String>
 }
 
 impl RecipeSpec {
@@ -39,7 +39,10 @@ impl RecipeSpec {
     ///   parsing failed.
     ///
     pub fn start_date(&self) -> Result<NaiveDateTime, ParseError> {
-        get_naive_date_time_from_string(&self.start_string[..])
+        match &self.start_string {
+            Some(x) => get_naive_date_time_from_string(&x[..]),
+            None => Ok(NaiveDateTime::new(NaiveDate::from_ymd(1970, 1, 1), NaiveTime::from_hms(0, 0, 0)))
+        }
     }
 }
 
