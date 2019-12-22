@@ -13,30 +13,30 @@
     dep 3
 
   [3] Brewing
-    start 2020-01-01 04:00:00
+    start 2020-01-01 04
     color #7A5624
     duration 24
     dep 4
 
   [4] Primary Fermentation
-    start 2020-01-02 04:00:00
+    start 2020-01-02 04
     color #7A5624
     duration 792
     dep 5
 
   [5] Secondary Fermentation
-    start 2020-02-04 04:00:00
+    start 2020-02-04 04
     color #7A5624
     duration 1536
     dep 6
 
   [6] Carbonation
-    start 2020-04-08 04:00:00
+    start 2020-04-08 04
     color #7A5624
     duration 240
     dep 7
 
   [7] Available to Drink
-    start 2020-04-18 04:00:00
+    start 2020-04-18 04
     color #7A5624
     duration 4320

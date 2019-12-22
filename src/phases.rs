@@ -82,7 +82,7 @@ impl PhaseInstance {
 
     pub fn get_string_in_pla_format(&self, initial_indent: usize) -> String {
         // If the time is set to start at midnight, then let's just output the date.
-        let mut start_date_as_string: String = self.start_date.to_string();
+        let mut start_date_as_string: String = self.start_date.format("%Y-%m-%d %H").to_string();
         let midnight: NaiveTime = NaiveTime::from_hms(0, 0, 0);
         if self.start_date.time() == midnight {
             start_date_as_string = self.start_date.date().to_string();
