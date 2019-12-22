@@ -16,6 +16,12 @@ use super::util::{get_space_indent, get_naive_date_time_from_string};
 /// The specifications are translated from JSON in the form of a `recipes` block into actual
 /// `Recipe` instances. The `Recipe`s themselves can then be transformed into PLA format.
 ///
+/// # Notes
+/// The specifications represent the general classification of a particular recipe within the
+/// definition (JSON) file. The actual instances (i.e. objects of the `Recipe` type) are
+/// instantiations of this specification data that will be added to the schedule. Only `Recipe`
+/// objects are output to PLA format, but they are created using `RecipeSpec` objects.
+///
 pub struct RecipeSpec {
     pub name: String,
 
@@ -47,6 +53,15 @@ impl RecipeSpec {
 }
 
 #[derive(Clone, PartialEq, Debug)]
+/// An instance of a `RecipeSpec`, repesenting a specific brewing of a particular recipe within the
+/// schedule.
+///
+/// # Notes
+/// The specifications represent the general classification of a particular recipe within the
+/// definition (JSON) file. The actual instances (i.e. objects of the `Recipe` type) are
+/// instantiations of this specification data that will be added to the schedule. Only `Recipe`
+/// objects are output to PLA format, but they are created using `RecipeSpec` objects.
+///
 pub struct Recipe {
     pub id: usize,
     pub name: String,

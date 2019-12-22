@@ -1,11 +1,13 @@
 use chrono::Duration;
 
 use chronogrog::phases::PhaseInstance;
+use chronogrog::util::get_naive_date_time_from_string;
 
 #[test]
 fn it_should_construct_a_new_phaseinstance() {
     let phase_instance = PhaseInstance::new(0, "A phase instance".to_string(),
-                                            "#FFFFFF".to_string(), Duration::days(10));
+                                            "#FFFFFF".to_string(), Duration::days(10),
+                                            get_naive_date_time_from_string("2020-01-01").unwrap());
 
     assert_eq!(0, phase_instance.id);
     assert_eq!("A phase instance".to_string(), phase_instance.description);
@@ -19,7 +21,8 @@ fn it_should_construct_a_new_phaseinstance() {
 #[test]
 fn it_should_show_phaseinstance_has_one_dependency() {
     let mut phase_instance = PhaseInstance::new(0, "A phase instance".to_string(),
-                                                "#FFFFFF".to_string(), Duration::days(10));
+                                                "#FFFFFF".to_string(), Duration::days(10),
+                                                get_naive_date_time_from_string("2020-01-01").unwrap());
 
     phase_instance.add_dependency(2);
     phase_instance.add_dependency(2);
@@ -31,7 +34,8 @@ fn it_should_show_phaseinstance_has_one_dependency() {
 #[test]
 fn it_should_show_phaseinstance_has_two_dependencies() {
     let mut phase_instance = PhaseInstance::new(0, "A phase instance".to_string(),
-                                                "#FFFFFF".to_string(), Duration::days(10));
+                                                "#FFFFFF".to_string(), Duration::days(10),
+                                                get_naive_date_time_from_string("2020-01-01").unwrap());
 
     phase_instance.add_dependency(3);
     phase_instance.add_dependency(2);
@@ -43,11 +47,12 @@ fn it_should_show_phaseinstance_has_two_dependencies() {
 #[test]
 fn it_should_output_standard_pla_for_a_phaseinstance_with_two_dependencies() {
     let mut phase_instance = PhaseInstance::new(0, "A phase instance".to_string(),
-                                                "#FFFFFF".to_string(), Duration::days(10));
+                                                "#FFFFFF".to_string(), Duration::days(10),
+                                                get_naive_date_time_from_string("2020-01-01").unwrap());
 
     phase_instance.add_dependency(3);
     phase_instance.add_dependency(2);
 
-    assert_eq!("[0] A phase instance\n  color #FFFFFF\n  duration 240\n    dep 2\n    dep 3\n\n",
+    assert_eq!("[0] A phase instance\n  start 2020-01-01\n  color #FFFFFF\n  duration 240\n    dep 2\n    dep 3\n\n",
                phase_instance.get_string_in_pla_format(0));
 }

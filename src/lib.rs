@@ -253,6 +253,9 @@ impl ProductionSchedule {
     fn rebuild_phases_from_specs(&mut self, recipe_spec: &RecipeSpec) -> Vec<PhaseInstance> {
         let mut phases: Vec<PhaseInstance> = vec![];
 
+        // The start date of the next phase
+        let mut next_start_date: NaiveDateTime = recipe_spec.start_date().unwrap();
+
         for next_spec in recipe_spec.phase_specs.iter() {
             let id: usize = self.get_next_id();
 
@@ -285,9 +288,9 @@ impl ProductionSchedule {
                 None => Duration::days(1)
             };
 
-
             phases.push(PhaseInstance::new(id, description, recipe_spec.color_hex.clone(),
-                                           duration));
+                                           duration, next_start_date));
+            next_start_date = next_start_date + duration;
         }
 
         // We have to actally run through the phases from the back and add the next phase id
