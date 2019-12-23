@@ -54,19 +54,22 @@
       "description": "Brewing",
       "id": "brewing",
       "order": 1,
-      "defaultDuration": "1d"
+      "defaultDuration": "1d",
+      "resourcesNeeded": [ "kettle", "mashtun", "lautertun" ]
     },
     {
       "description": "Primary Fermentation",
       "id": "primary",
       "order": 2,
-      "defaultDuration": "10"
+      "defaultDuration": "10",
+      "resourcesNeeded": [ "fermentor" ]
     },
     {
       "description": "Secondary Fermentation",
       "id": "secondary",
       "order": 3,
-      "defaultDuration": "4w"
+      "defaultDuration": "4w",
+      "resourcesNeeded": [ "fermentor" ]
     },
     {
       "description": "Conditioning/Aging",
@@ -77,13 +80,15 @@
       "description": "Carbonation",
       "id": "carbonation",
       "order": 5,
-      "defaultDuration": "10d"
+      "defaultDuration": "10d",
+      "resourcesNeeded": [ "gastank", "kegerator", "keg" ]
     },
     {
       "description": "Available to Drink",
       "id": "ready",
       "order": 6,
-      "defaultDuration": "6m"
+      "defaultDuration": "6m",
+      "resourcesNeeded": [ "keg" ]
     }
   ],
   "recipes": [
@@ -97,26 +102,21 @@
           "duration": "4h"
         },
         {
-          "template": "brewing",
-          "resourcesNeeded": [ "kettle", "mashtun", "lautertun" ]
+          "template": "brewing"
         },
         {
           "template": "primary",
-          "duration": "33d",
-          "resourcesNeeded": [ "fermentor" ]
+          "duration": "33d"
         },
         {
           "template": "secondary",
-          "duration": "64d",
-          "resourcesNeeded": [ "fermentor" ]
+          "duration": "64d"
         },
         {
-          "template": "carbonation",
-          "resourcesNeeded": [ "gastank", "kegerator", "keg" ]
+          "template": "carbonation"
         },
         {
-          "template": "ready",
-          "resourcesNeeded": [ "keg" ]
+          "template": "ready"
         }
       ]
     }

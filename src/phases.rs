@@ -4,6 +4,7 @@ use string_builder::Builder;
 
 use serde::{Serialize, Deserialize};
 
+use super::resources::{ResourceType};
 use super::util::{get_space_indent, get_duration_in_hours, convert_string_to_duration};
 
 #[derive(Serialize, Deserialize, Default, Clone, PartialEq, Debug)]
@@ -11,6 +12,10 @@ pub struct ProductionPhaseTemplate {
     pub description: String,
     pub id: String,
     pub order: usize,
+
+    #[serde(rename="resourcesNeeded")]
+    #[serde(default="Vec::new")]
+    pub resources_needed: Vec<ResourceType>,
 
     #[serde(rename="color")]
     #[serde(default = "String::new")]
@@ -36,7 +41,7 @@ pub struct PhaseInstanceSpec {
 
     #[serde(rename = "duration")]
     #[serde(default = "String::new")]
-    pub duration_string: String,
+    pub duration_string: String
 }
 
 impl PhaseInstanceSpec {

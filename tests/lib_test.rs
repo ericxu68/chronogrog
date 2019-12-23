@@ -3,7 +3,6 @@ use std::fs;
 use chrono::{Duration, NaiveDate, NaiveDateTime, NaiveTime};
 
 use chronogrog::ProductionSchedule;
-use chronogrog::phases::ProductionPhaseTemplate;
 use chronogrog::resources::ResourceType;
 
 #[test]
@@ -107,38 +106,6 @@ fn it_should_be_able_to_convert_a_bpd_file_to_a_pla_file() {
     let contents = fs::read_to_string("tests/fixtures/simple_prod_schedule.pla")
                          .expect("Something went wrong reading the file");
     assert_eq!(contents, pla_format);
-}
-
-#[test]
-fn it_should_not_allow_for_an_empty_default_duration() {
-    let funny_prod_schedule_json = r#"
-        {
-            "id": "erroneous",
-            "description": "Erroneous Phase",
-            "order": 39182,
-            "defaultDuration": ""
-        }
-    "#;
-
-    let result: ProductionPhaseTemplate = serde_json::from_str(funny_prod_schedule_json).unwrap();
-
-    assert_eq!(None, result.default_duration());
-}
-
-#[test]
-fn it_should_reject_an_unknown_specifier_for_default_duration() {
-    let funny_prod_schedule_json = r#"
-        {
-            "id": "erroneous",
-            "description": "Erroneous Phase",
-            "order": 39182,
-            "defaultDuration": "25x"
-        }
-    "#;
-
-    let result: ProductionPhaseTemplate = serde_json::from_str(funny_prod_schedule_json).unwrap();
-
-    assert_eq!(None, result.default_duration());
 }
 
 #[test]

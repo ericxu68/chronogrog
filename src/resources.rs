@@ -242,7 +242,7 @@ impl ResourceTracker {
     ///   * `Some`: Contains an instance of type [NaiveDateTime](chrono::NaiveDateTime) that
     ///     represents the closest date at which a `Resource` of type `resource_type` will be free,
     ///     if there is at least one `Resource` of type `resource_type` allocated.
-    ///   * `None`: If there are no `Resource`s of type `resource_type` allocated.
+    ///   * `None`: If there are no `Resource`s of type `resource_type` that can be allocated.
     ///
     pub fn next_available_resource_date_for_type(&mut self, current_date: NaiveDateTime,
                                                  resource_type : ResourceType)
