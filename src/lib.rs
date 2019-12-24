@@ -104,9 +104,9 @@ impl ProductionSchedule {
 
     pub fn init(&mut self) {
         self.last_id_used = 0;
+        self.track_resources();
         self.verify_recipe_start_dates();
         self.rebuild_recipes_from_specs();
-        self.track_resources();
     }
 
     pub fn resources(&self) -> Vec<Resource> {
