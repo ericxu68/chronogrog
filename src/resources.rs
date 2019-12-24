@@ -290,8 +290,13 @@ impl ResourceTracker {
         self.refresh(start_date);
 
         let free_resources = self.free_resources.clone();
+        let mut free_vector: Vec<(&usize, &Resource)> = free_resources.iter().collect();
+        free_vector.sort_by(|a, b| a.0.cmp(b.0));
         let to_remove: Option<(&usize, &Resource)>
-          = free_resources.iter().find(|res| res.1.resource_type == resource_type);
+          = free_vector.iter()
+                       .find(|res| res.1.resource_type == resource_type)
+                       .map(|res| res.clone());
+
         match to_remove {
             Some(x) => {
                 self.move_resource_to_allocated_list(x.1, start_date.checked_add_signed(duration)
