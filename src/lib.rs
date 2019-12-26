@@ -1,6 +1,4 @@
 use std::default::Default;
-use std::fs::File;
-use std::io::BufReader;
 use std::io::prelude::*;
 use std::iter::Iterator;
 
@@ -84,13 +82,8 @@ pub struct ProductionSchedule {
 }
 
 impl ProductionSchedule {
-    pub fn new(filename: &str) -> Self {
-        let file = File::open(filename).unwrap();
-        let mut buf_reader = BufReader::new(file);
-        let mut contents: String = String::new();
-        buf_reader.read_to_string(&mut contents).unwrap();
-
-        let result: serde_json::Result<ProductionSchedule> = serde_json::from_str(contents.as_str());
+    pub fn new(json_data: &str) -> Self {
+        let result: serde_json::Result<ProductionSchedule> = serde_json::from_str(json_data);
         match result {
             Ok(mut x) => {
                 x.init();
@@ -193,6 +186,12 @@ impl ProductionSchedule {
 
         // Remove the last newline at the end of the file, as it's unnecessary
         final_pla[..final_pla.len() - 1].to_string()
+    }
+
+    pub fn write_pla_file(&self, mut output_stream: Box<dyn Write>) -> std::io::Result<()> {
+        let pla_data = self.get_string_in_pla_format();
+
+        output_stream.write_all(pla_data.as_bytes())
     }
 
     fn get_next_id(&mut self) -> usize {

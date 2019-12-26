@@ -5,9 +5,12 @@ use chrono::{Duration, NaiveDate, NaiveDateTime, NaiveTime};
 use chronogrog::ProductionSchedule;
 use chronogrog::resources::ResourceType;
 
+use chronogrog::util::get_json_data_from_file;
+
 #[test]
 fn it_should_load_a_json_file_into_a_new_production_schedule() {
-    let ps = ProductionSchedule::new("tests/fixtures/productionSchedule.json");
+
+    let ps = ProductionSchedule::new(&get_json_data_from_file("tests/fixtures/productionSchedule.json").unwrap()[..]);
 
     assert_eq!("Simple Production Schedule", ps.name);
     assert_eq!(1, ps.id);
@@ -29,7 +32,7 @@ fn it_should_load_a_json_file_into_a_new_production_schedule() {
 
 #[test]
 fn the_simple_production_schedule_file_should_have_three_phases() {
-    let ps = ProductionSchedule::new("tests/fixtures/productionSchedule.json");
+    let ps = ProductionSchedule::new(&get_json_data_from_file("tests/fixtures/productionSchedule.json").unwrap()[..]);
 
     assert_eq!("Planning", ps.phase_templates[0].description);
 
@@ -46,7 +49,7 @@ fn the_simple_production_schedule_file_should_have_three_phases() {
 
 #[test]
 fn the_simple_production_schedule_should_include_six_resources() {
-    let ps = ProductionSchedule::new("tests/fixtures/productionSchedule.json");
+    let ps = ProductionSchedule::new(&get_json_data_from_file("tests/fixtures/productionSchedule.json").unwrap()[..]);
 
     assert_eq!(9, ps.resources().len());
 
@@ -75,7 +78,7 @@ fn the_simple_production_schedule_should_include_six_resources() {
 
 #[test]
 fn it_should_be_able_to_retrieve_recipes_by_name_and_id() {
-    let ps = ProductionSchedule::new("tests/fixtures/productionSchedule.json");
+    let ps = ProductionSchedule::new(&get_json_data_from_file("tests/fixtures/productionSchedule.json").unwrap()[..]);
 
     let damned_squirrel = ps.get_recipe_by_name("Damned Squirrel Mk. II").unwrap();
     assert_eq!(damned_squirrel.name, "Damned Squirrel Mk. II");
@@ -86,7 +89,7 @@ fn it_should_be_able_to_retrieve_recipes_by_name_and_id() {
 
 #[test]
 fn it_should_be_able_to_retrieve_an_available_resource_by_type() {
-    let ps = ProductionSchedule::new("tests/fixtures/productionSchedule.json");
+    let ps = ProductionSchedule::new(&get_json_data_from_file("tests/fixtures/productionSchedule.json").unwrap()[..]);
 
     let res = ps.get_available_resource_by_type(ResourceType::Kettle).unwrap();
 
@@ -99,7 +102,7 @@ fn it_should_be_able_to_retrieve_an_available_resource_by_type() {
 
 #[test]
 fn it_should_be_able_to_convert_a_bpd_file_to_a_pla_file() {
-    let ps = ProductionSchedule::new("tests/fixtures/productionSchedule.json");
+    let ps = ProductionSchedule::new(&get_json_data_from_file("tests/fixtures/productionSchedule.json").unwrap()[..]);
 
     let pla_format: String = ps.get_string_in_pla_format();
 
@@ -111,5 +114,5 @@ fn it_should_be_able_to_convert_a_bpd_file_to_a_pla_file() {
 #[test]
 #[should_panic]
 fn it_should_panic_on_an_unparseable_json_file() {
-    ProductionSchedule::new("tests/fixtures/bad_production_schedule.json");
+    ProductionSchedule::new(&get_json_data_from_file("tests/fixtures/bad_production_schedule.json").unwrap()[..]);
 }

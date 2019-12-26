@@ -1,5 +1,6 @@
 [package]
 name = "chronogrog"
+description = "Convert a file in beer production description format (BPD) to PLA format, a format suitable for usage with the PLA tool. Note that the beer production description format is a specialized format for describing beer recipe production data."
 version = "0.1.0"
 authors = ["Scott Johnson <jaywir3@gmail.com>"]
 edition = "2018"
@@ -13,3 +14,4 @@ assert-json-diff = "1.0.0"
 chrono = "0.4.9"
 string-builder = "0.2.0"
 serde_test = "1.0.103"
+clap = "~2.33.0"
