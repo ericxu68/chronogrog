@@ -250,6 +250,23 @@ impl ProductionSchedule {
         self.recipes = recipes_vec;
     }
 
+    /// Rebuild all `PhaseInstance's from a set of [RecipeSpec](chronogrog::recipes::RecipeSpec)
+    /// and  a [ProductionPhaseTemplate](chrono::phases::ProductionPhaseTemplate).
+    ///
+    /// This places all the necessary data into the data structures necessary to convert the
+    /// JSON specification to a PLA formatted file.
+    ///
+    /// # Arguments
+    /// - `self` : A _mutable_ reference to this
+    ///   [ProductionSchedule](chronogrog::ProductionSchedule). It needs to be mutable because
+    ///   internal references are updated as part of this function call.
+    /// - `recipe_spec` : A borrowed reference to a [RecipeSpec](chronogrog::recipes::RecipeSpec)
+    ///    defining the containing recipe specification that will be used to construct the
+    ///    instances of production phases.
+    ///
+    /// # Returns
+    /// - A `Vec` of `PhaseInstance` objects.
+    ///
     fn rebuild_phases_from_specs(&mut self, recipe_spec: &RecipeSpec) -> Vec<PhaseInstance> {
         let mut phases: Vec<PhaseInstance> = vec![];
 
@@ -270,13 +287,16 @@ impl ProductionSchedule {
                 }
             };
 
+            // The production phase template we're going to use to construct this instance.
+            let template: ProductionPhaseTemplate = self.get_phase_by_id(&next_spec.template[..]).unwrap();
+
             // If the description is specified in the spec, use that description.
             // Otherwise, use the description by looking up from the template.
             let mut description: String = next_spec.description.clone();
+
             description = match description.is_empty()  {
                 true => {
-                    let template: ProductionPhaseTemplate = self.get_phase_by_id(&next_spec.template[..]).unwrap();
-                    template.description
+                    template.description.clone()
                 },
                 false => description
             };
@@ -288,8 +308,31 @@ impl ProductionSchedule {
                 None => Duration::days(1)
             };
 
+            let mut resources_used : Vec<Resource> = vec![];
+
+            for next_resource_type in template.resources_needed {
+                // Find the date that the next resource of type will be available.
+                next_start_date
+                  = match self.tracker.next_available_resource_date_for_type(next_start_date,
+                                                                             next_resource_type.clone()) {
+                    Some(date) => date,
+                    None => panic!("No resources of type {:?} available to allocate, which is required by phase {:?}",
+                                   next_resource_type, template.description.clone())
+                };
+
+                // Allocate the resource
+                let allocated_resource = self.tracker.allocate_resource_of_type_for_duration(next_resource_type.clone(), next_start_date, duration);
+
+                if (allocated_resource).is_none() {
+                    panic!("Unable to allocate a resource of type {:?}", next_resource_type);
+                }
+
+                // Put the allocated resource into the vector
+                resources_used.push(allocated_resource.unwrap());
+            }
+
             phases.push(PhaseInstance::new(id, description, recipe_spec.color_hex.clone(),
-                                           duration, next_start_date));
+                                           duration, next_start_date, resources_used));
             next_start_date = next_start_date + duration;
         }
 

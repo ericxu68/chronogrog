@@ -11,7 +11,7 @@ use super::util::{get_space_indent, get_naive_date_time_from_string};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 
-/// A specification for constructing instances of [Recipe](chronogrog::Recipe).
+/// A specification for constructing instances of [Recipe](super::Recipe).
 ///
 /// The specifications are translated from JSON in the form of a `recipes` block into actual
 /// `Recipe` instances. The `Recipe`s themselves can then be transformed into PLA format.

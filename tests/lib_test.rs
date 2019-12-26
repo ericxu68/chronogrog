@@ -48,7 +48,7 @@ fn the_simple_production_schedule_file_should_have_three_phases() {
 fn the_simple_production_schedule_should_include_six_resources() {
     let ps = ProductionSchedule::new("tests/fixtures/productionSchedule.json");
 
-    assert_eq!(6, ps.resources().len());
+    assert_eq!(9, ps.resources().len());
 
     // There should be a kettle in the resources
     let resources = &ps.resources();

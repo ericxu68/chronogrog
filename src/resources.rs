@@ -260,6 +260,7 @@ impl ResourceTracker {
                                 .filter(|p| p.1.resource.resource_type == resource_type)
                                 .map(|p| p.1)
                                 .collect();
+
       if allocated_of_type.is_empty() {
           return None;
       }
@@ -286,7 +287,7 @@ impl ResourceTracker {
     ///
     pub fn allocate_resource_of_type_for_duration(&mut self, resource_type: ResourceType,
                                                   start_date: NaiveDateTime,
-                                                  duration: Duration) -> Option<&Resource> {
+                                                  duration: Duration) -> Option<Resource> {
         self.refresh(start_date);
 
         let free_resources = self.free_resources.clone();
@@ -301,7 +302,7 @@ impl ResourceTracker {
             Some(x) => {
                 self.move_resource_to_allocated_list(x.1, start_date.checked_add_signed(duration)
                                                                     .unwrap());
-                Some(&self.allocated_resources.get(&x.1.id).unwrap().resource)
+                Some((self.allocated_resources.get(&x.1.id).unwrap().resource).clone())
             },
             None => None
         }

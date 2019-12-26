@@ -58,7 +58,8 @@ fn it_should_reject_an_unknown_specifier_for_default_duration() {
 fn it_should_construct_a_new_phaseinstance() {
     let phase_instance = PhaseInstance::new(0, "A phase instance".to_string(),
                                             "#FFFFFF".to_string(), Duration::days(10),
-                                            get_naive_date_time_from_string("2020-01-01").unwrap());
+                                            get_naive_date_time_from_string("2020-01-01").unwrap(),
+                                            vec![]);
 
     assert_eq!(0, phase_instance.id);
     assert_eq!("A phase instance".to_string(), phase_instance.description);
@@ -73,7 +74,8 @@ fn it_should_construct_a_new_phaseinstance() {
 fn it_should_show_phaseinstance_has_one_dependency() {
     let mut phase_instance = PhaseInstance::new(0, "A phase instance".to_string(),
                                                 "#FFFFFF".to_string(), Duration::days(10),
-                                                get_naive_date_time_from_string("2020-01-01").unwrap());
+                                                get_naive_date_time_from_string("2020-01-01").unwrap(),
+                                                vec![]);
 
     phase_instance.add_dependency(2);
     phase_instance.add_dependency(2);
@@ -86,7 +88,8 @@ fn it_should_show_phaseinstance_has_one_dependency() {
 fn it_should_show_phaseinstance_has_two_dependencies() {
     let mut phase_instance = PhaseInstance::new(0, "A phase instance".to_string(),
                                                 "#FFFFFF".to_string(), Duration::days(10),
-                                                get_naive_date_time_from_string("2020-01-01").unwrap());
+                                                get_naive_date_time_from_string("2020-01-01").unwrap(),
+                                                vec![]);
 
     phase_instance.add_dependency(3);
     phase_instance.add_dependency(2);
@@ -99,7 +102,8 @@ fn it_should_show_phaseinstance_has_two_dependencies() {
 fn it_should_output_standard_pla_for_a_phaseinstance_with_two_dependencies() {
     let mut phase_instance = PhaseInstance::new(0, "A phase instance".to_string(),
                                                 "#FFFFFF".to_string(), Duration::days(10),
-                                                get_naive_date_time_from_string("2020-01-01").unwrap());
+                                                get_naive_date_time_from_string("2020-01-01").unwrap(),
+                                                vec![]);
 
     phase_instance.add_dependency(3);
     phase_instance.add_dependency(2);

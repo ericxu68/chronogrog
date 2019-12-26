@@ -8,39 +8,57 @@
   "resources": [
     {
       "id": 1,
+      "name": "FV-001",
+      "type": "fermentor",
+      "capacity": "5g"
+    },
+    {
+      "id": 2,
       "name": "Big Bertha",
       "type": "fermentor",
       "capacity": "14g"
     },
     {
-      "id": 2,
+      "id": 3,
       "name": "Large Kettle",
       "type": "kettle",
       "capacity": "15g"
     },
     {
-      "id": 3,
+      "id": 4,
       "name": "Large Mash Tun",
       "type": "mashtun",
       "capacity": "15g"
     },
     {
-      "id": 4,
+      "id": 5,
       "name": "Large Lauter Tun",
       "type": "lautertun",
       "capacity": "15g"
     },
     {
-      "id": 5,
+      "id": 6,
       "name": "Keg 001",
       "type": "keg",
       "capacity": "5g"
     },
     {
-      "id": 6,
+      "id": 7,
+      "name": "Keg 002",
+      "type": "keg",
+      "capacity": "5g"
+    },
+    {
+      "id": 8,
       "name": "Scott's Kegerator",
       "type": "kegerator",
       "capacity": "2k"
+    },
+    {
+      "id": 9,
+      "name": "Scott's CO2 Tank",
+      "type": "gastank",
+      "capacity": "5g"
     }
   ],
   "phaseTemplates": [
