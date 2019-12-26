@@ -1,5 +1,8 @@
-use std::io::{Read, Write};
+use std::io::{BufReader, Read, Write};
 use std::fs::File;
+
+extern crate chronogrog;
+use chronogrog::ProductionSchedule;
 
 #[macro_use]
 extern crate clap;
@@ -43,6 +46,12 @@ fn main() {
         None => Box::new(std::io::stdin())
     };
 
+    let mut buf_reader = BufReader::new(input_file);
+    let mut json_data: String = String::new();
+    buf_reader.read_to_string(&mut json_data).unwrap();
+
+    let production_schedule: ProductionSchedule = ProductionSchedule::new(&json_data[..]);
+
     let output_file: Box<dyn Write> = match matches.value_of("output") {
         Some(out_file) => match File::create(out_file) {
             Ok(f) => Box::new(f),
@@ -51,6 +60,8 @@ fn main() {
         None => Box::new(std::io::stdout())
     };
 
-    // println!("Reading from stdin? {:?}", input_file == std::io::stdin());
-    // println!("Writing to stdout? {:?}", output_file == std::io::stdin());
+    match production_schedule.write_pla_file(output_file) {
+        Ok(_x) => _x,
+        Err(e) => panic!("{}", e)
+    }
 }

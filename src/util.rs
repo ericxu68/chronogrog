@@ -1,4 +1,6 @@
 use std::error::Error;
+use std::fs::File;
+use std::io::{BufReader, Read};
 
 use chrono::{Duration, NaiveDate, NaiveDateTime, ParseError};
 
@@ -68,4 +70,15 @@ pub fn get_duration_in_hours(duration: Duration) -> i64 {
 
 pub fn get_space_indent(indents: usize) -> String {
     " ".repeat(indents * 2)
+}
+
+pub fn get_json_data_from_file(in_filename: &str) -> std::io::Result<String> {
+    let file = File::open(in_filename)?;
+
+    let mut buf_reader = BufReader::new(file);
+    let mut contents = String::new();
+
+    buf_reader.read_to_string(&mut contents)?;
+
+    Ok(contents)
 }
