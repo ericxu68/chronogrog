@@ -1,0 +1,198 @@
+{
+  "name": "Simple Production Schedule",
+  "id": 1,
+  "timeline": {
+    "configuration": "calendar",
+    "start": "2020-01-01"
+  },
+  "resources": [
+    {
+      "id": 1,
+      "name": "FV-001",
+      "type": "fermentor",
+      "capacity": "5g"
+    },
+    {
+      "id": 2,
+      "name": "Big Bertha",
+      "type": "fermentor",
+      "capacity": "14g"
+    },
+    {
+      "id": 3,
+      "name": "Large Kettle",
+      "type": "kettle",
+      "capacity": "15g"
+    },
+    {
+      "id": 4,
+      "name": "Large Mash Tun",
+      "type": "mashtun",
+      "capacity": "15g"
+    },
+    {
+      "id": 5,
+      "name": "Large Lauter Tun",
+      "type": "lautertun",
+      "capacity": "15g"
+    },
+    {
+      "id": 6,
+      "name": "Keg 001",
+      "type": "keg",
+      "capacity": "5g"
+    },
+    {
+      "id": 7,
+      "name": "Keg 002",
+      "type": "keg",
+      "capacity": "5g"
+    },
+    {
+      "id": 8,
+      "name": "Scott's Kegerator",
+      "type": "kegerator",
+      "capacity": "2k"
+    },
+    {
+      "id": 9,
+      "name": "Scott's CO2 Tank",
+      "type": "gastank",
+      "capacity": "5g"
+    }
+  ],
+  "phaseTemplates": [
+    {
+      "description": "Planning",
+      "id": "planning",
+      "order": 0,
+      "defaultDuration": "1h"
+    },
+    {
+      "description": "Brewing",
+      "id": "brewing",
+      "order": 1,
+      "defaultDuration": "1d",
+      "resourcesNeeded": [ "kettle", "mashtun", "lautertun" ]
+    },
+    {
+      "description": "Primary Fermentation",
+      "id": "primary",
+      "order": 2,
+      "defaultDuration": "10",
+      "resourcesNeeded": [ "fermentor" ]
+    },
+    {
+      "description": "Secondary Fermentation",
+      "id": "secondary",
+      "order": 3,
+      "defaultDuration": "4w",
+      "resourcesNeeded": [ "fermentor" ]
+    },
+    {
+      "description": "Conditioning/Aging",
+      "id": "conditioning",
+      "order": 4
+    },
+    {
+      "description": "Carbonation",
+      "id": "carbonation",
+      "order": 5,
+      "defaultDuration": "10d",
+      "resourcesNeeded": [ "gastank", "kegerator", "keg" ]
+    },
+    {
+      "description": "Available to Drink",
+      "id": "ready",
+      "order": 6,
+      "defaultDuration": "6m",
+      "resourcesNeeded": [ "keg" ]
+    }
+  ],
+  "recipes": [
+    {
+      "name": "Damned Squirrel Mk. II",
+      "color": "#7A5624",
+      "batchSize": "10g",
+      "phases": [
+        {
+          "template": "planning",
+          "duration": "4h"
+        },
+        {
+          "template": "brewing"
+        },
+        {
+          "template": "primary",
+          "duration": "33d"
+        },
+        {
+          "template": "secondary",
+          "duration": "64d"
+        },
+        {
+          "template": "carbonation"
+        },
+        {
+          "template": "ready"
+        }
+      ]
+    },
+    {
+      "name": "Copperton",
+      "color": "#C37114",
+      "batchSize": "10g",
+      "phases": [
+        {
+          "template": "planning",
+          "duration": "4h"
+        },
+        {
+          "template": "brewing"
+        },
+        {
+          "template": "primary",
+          "duration": "5d"
+        },
+        {
+          "template": "secondary",
+          "duration": "23d"
+        },
+        {
+          "template": "carbonation"
+        },
+        {
+          "template": "ready"
+        }
+      ]
+    },
+    {
+      "name": "Dobroy Nochi Mk. II",
+      "color": "#2D0607",
+      "batchSize": "5g",
+      "phases": [
+        {
+          "template": "planning",
+          "duration": "4h"
+        },
+        {
+          "template": "brewing"
+        },
+        {
+          "template": "primary",
+          "duration": "12d"
+        },
+        {
+          "template": "secondary",
+          "duration": "70d"
+        },
+        {
+          "template": "carbonation"
+        },
+        {
+          "template": "ready"
+        }
+      ]
+    }
+  ]
+}

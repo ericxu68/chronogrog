@@ -6,6 +6,9 @@ extern crate chrono;
 use chrono::{Duration, NaiveDateTime};
 use chrono::format::ParseError;
 
+extern crate chrono_period;
+use chrono_period::NaivePeriod;
+
 use serde::{Deserialize, Serialize};
 
 extern crate string_builder;
@@ -265,7 +268,6 @@ impl ProductionSchedule {
     ///
     /// # Returns
     /// - A `Vec` of `PhaseInstance` objects.
-    ///
     fn rebuild_phases_from_specs(&mut self, recipe_spec: &RecipeSpec) -> Vec<PhaseInstance> {
         let mut phases: Vec<PhaseInstance> = vec![];
 
@@ -308,26 +310,46 @@ impl ProductionSchedule {
             };
 
             let mut resources_used : Vec<Resource> = vec![];
+            let mut result_start_date;
 
-            for next_resource_type in template.resources_needed {
-                // Find the date that the next resource of type will be available.
-                next_start_date
-                  = match self.tracker.next_available_resource_date_for_type(next_start_date,
-                                                                             next_resource_type.clone()) {
-                    Some(date) => date,
-                    None => panic!("No resources of type {:?} available to allocate, which is required by phase {:?}",
-                                   next_resource_type, template.description.clone())
+            // We need to look through all the resources to determine if we have to push the start
+            // date back due to resource allocation constraints.
+            for next_resource_type in template.resources_needed.clone() {
+                let requested_start_date = next_start_date.clone();
+
+                let requested_period = NaivePeriod::from_start_duration(requested_start_date,
+                                                                        duration);
+
+                result_start_date = match self.tracker
+                  .get_next_available_resource_date_for_type_over_period(&next_resource_type,
+                                                                         requested_period) {
+                  Some(date) => date,
+                  None => panic!("{} {:?}, {} {:?}", "No resources of type", next_resource_type,
+                                 "which is required by phase", template.description.clone())
                 };
 
+                // If we can't allocate a resource in the given timeframe, we need to push back
+                // the start date of the phase.
+                if result_start_date.timestamp() > next_start_date.timestamp() {
+                    next_start_date = result_start_date;
+                }
+            }
+
+            for next_resource_type in template.resources_needed {
                 // Allocate the resource
-                let allocated_resource = self.tracker.allocate_resource_of_type_for_duration(next_resource_type.clone(), next_start_date, duration);
+                let allocation_period = NaivePeriod::from_start_duration(next_start_date,
+                                                                         duration);
+
+                let allocated_resource
+                  = self.tracker.allocate_resource_of_type_for_period(&next_resource_type,
+                                                                      allocation_period);
 
                 if (allocated_resource).is_none() {
                     panic!("Unable to allocate a resource of type {:?}", next_resource_type);
                 }
 
                 // Put the allocated resource into the vector
-                resources_used.push(allocated_resource.unwrap());
+                resources_used.push(allocated_resource.unwrap().clone());
             }
 
             phases.push(PhaseInstance::new(id, description, recipe_spec.color_hex.clone(),
