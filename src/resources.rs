@@ -1,10 +1,11 @@
 use chrono::Duration;
 use chrono::NaiveDateTime;
 
+use chrono_period::NaivePeriod;
+
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
 use std::collections::HashMap;
-use core::cmp::Ordering;
 
 #[derive(Clone, Debug, PartialEq)]
 
@@ -28,6 +29,9 @@ pub enum ResourceType {
 
     /// A place to put kegs in order to refrigerate.
     Kegerator,
+
+    /// A tank for force-carbonating beer.
+    GasTank,
 
     /// A resource type that has not yet been added to the standard enum. The "real" type of the
     /// resource, for the purposes of serialization and deserialization, will be contained in the
@@ -61,6 +65,7 @@ impl From<&str> for ResourceType {
             "lautertun" => ResourceType::LauterTun,
             "keg" => ResourceType::Keg,
             "kegerator" => ResourceType::Kegerator,
+            "gastank" => ResourceType::GasTank,
             _ => ResourceType::Other(res.to_string())
         }
     }
@@ -127,7 +132,6 @@ impl<'de> Deserialize<'de> for ResourceType {
 ///
 /// # Errors
 /// * An `Error`, if the serialization failed.
-
 impl Serialize for ResourceType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where S: Serializer
@@ -139,14 +143,14 @@ impl Serialize for ResourceType {
             ResourceType::LauterTun => "lautertun",
             ResourceType::Keg => "keg",
             ResourceType::Kegerator => "kegerator",
+            ResourceType::GasTank => "gastank",
             ResourceType::Other(ref other) => other
         })
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-
 /// A piece of equipment that must be used in order to produce a `Recipe`.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Resource {
     pub id: usize,
     pub name: String,
@@ -154,8 +158,113 @@ pub struct Resource {
     #[serde(rename="type")]
     pub resource_type: ResourceType,
 
+    /// A `String` denoting the capacity for this `Resource`.
+    ///
+    /// # Notes
+    /// This is currently unused, but will likely be used in the future in the form of an `enum` so
+    /// that we can check to see if a particular `Recipe` requires more than one `Resource` of a
+    /// particular type.
     #[serde(rename="capacity")]
     pub capacity_str: String,
+
+    #[serde(skip_serializing, skip_deserializing, default="Vec::new")]
+    pub allocated_periods: Vec<NaivePeriod>
+}
+
+impl Resource {
+    /// Create a new instance of `Resource`, given an id, a name, a `ResourceType`, and a capacity.
+    ///
+    /// # Arguments
+    /// - `id`: A `usize` indicating the identifier for the new `Resource`. This should be globally
+    ///   unique for all `Resource` objects used within a single `ResourceTracker`, however no
+    ///   enforcement of this is performed.
+    /// - `name`: An `&str` denoting the name of the new `Resource`.
+    /// - `resource_type`: A `ResourceType` denoting the type for the new `Resource`.
+    /// - `capacity_str`: An `&str` that denotes the capacity for the new `Resource`.
+    ///
+    /// # Returns
+    /// - A new instance of `Resource`, having the requested id, name, `ResourceType`, and
+    ///   capacity.
+    pub fn new(id: usize, name: &str, resource_type: ResourceType,
+               capacity_str: &str) -> Resource {
+        Resource {
+            id: id,
+            name: name.to_string(),
+            resource_type: resource_type,
+            capacity_str: capacity_str.to_string(),
+            allocated_periods: vec![]
+        }
+    }
+
+    /// Determine if this `Resource` is allocated at any time during a specific `Duration` starting
+    /// at a specific `NaiveDateTime`.
+    ///
+    /// # Arguments
+    /// - `start`: A [NaiveDateTime](chrono::NaiveDateTime) where the desired allocation would
+    ///   begin.
+    /// - `duration`: A [Duration](chrono::Duration) over which this `Resource` would be allocated.
+    ///
+    /// # Returns
+    /// - `true`, if this `Resource` is already allocated _at any point_ during the requested
+    ///   period comprising `start` - `end`, including `end`; `false`, otherwise.
+    pub fn is_allocated_over_start_duration(&self, start: NaiveDateTime,
+                                            duration: Duration) -> bool {
+        let intersection_period = NaivePeriod::from_start_duration(start, duration);
+
+        self.allocated_periods.iter().any(|period| {
+            period.intersects_with(intersection_period)
+        })
+    }
+
+    /// Determine if this `Resource` is allocated at any time during a specific `NaivePeriod`.
+    ///
+    /// # Arguments
+    /// - `period`: A [NaivePeriod](chrono::NaivePeriod) over which to check whether this
+    ///   `Resource` is allocated.
+    ///
+    /// # Returns
+    /// - `true`, if this `Resource` is already allocated _at any point_ during the requested
+    ///   `NaivePeriod`; `false`, otherwise.
+    pub fn is_allocated_over_period(&self, period: NaivePeriod) -> bool {
+        self.is_allocated_over_start_duration(period.start, period.duration())
+    }
+
+    pub fn allocate_over_start_duration(&mut self, start: NaiveDateTime,
+                                        duration: Duration) -> Option<&Resource> {
+        if self.is_allocated_over_start_duration(start, duration) {
+            return None;
+        }
+
+        let allocation_period = NaivePeriod::from_start_duration(start, duration);
+
+        self.allocated_periods.push(allocation_period);
+        self.allocated_periods.sort_by(|a, b| a.start.partial_cmp(&b.start).unwrap());
+
+        Some(self)
+    }
+
+    pub fn allocate_over_period(&mut self, period: NaivePeriod) -> Option<&Resource> {
+        self.allocate_over_start_duration(period.start, period.duration())
+    }
+
+    pub fn get_earliest_free_date_for_period(&self, period: NaivePeriod) -> NaiveDateTime {
+        if !self.is_allocated_over_start_duration(period.start, period.duration()) {
+            return period.start;
+        }
+
+        self.allocated_periods.iter().filter(|needle| {
+            // Discard any where the end date is before the desired start date.
+            if needle.end.timestamp() < period.start.timestamp() {
+                return false;
+            }
+
+            let end_date_plus_one_second = needle.end + Duration::seconds(1);
+            let is_alloc = !self.is_allocated_over_start_duration(end_date_plus_one_second, period.duration());
+            is_alloc
+        }).map(|needle| {
+            needle.end + Duration::seconds(1)
+        }).take(1).next().unwrap()
+    }
 }
 
 #[derive(Clone)]
@@ -175,20 +284,20 @@ pub struct PossiblyAllocatedResource {
 
 /// Tracking mechanism for `Resource`s.
 ///
-/// All usage of `Resource` objects shoiuld be tracked through this data structure. This provides
+/// All usage of `Resource` objects should be tracked through this data structure. This provides
 /// an API for retrieving an unused `Resource` of a given type.
 ///
-/// This data structure tracks used and unused `Resource` objects. For `Resource`s that are
-/// currently in use (and thus cannot be allocated to a new task), each object is tracked using the
-/// `AllocatedResource` structure.
+/// # Notes
+/// This data structure tracks `Resource` objects. Each `Resource` keeps track of its own times
+/// when it is allocated, using the [NaivePeriod](chrono_period::NaivePeriod) data structure.
 ///
-/// For unused `Resources`, a borrowed reference to the individual `Resource` is available.
+/// `Resource` objects are tracked using a hash map, hashing on the `id` field of the `Resource`.
+/// Thus, it is assumed that `id` fields will be unique within this instance of `ResourceTracker`.
+/// If you have an `id` that is duplicated, the behavior is undefined, but likely will result in
+/// unwanted behavior.
+#[derive(Debug)]
 pub struct ResourceTracker {
-    /// All `Resource` objects that are not currently in use
-    free_resources: HashMap<usize, Resource>,
-
-    /// Wrapped `Resource` objects that are in use (since the last refresh)
-    allocated_resources: HashMap<usize, PossiblyAllocatedResource>
+    resources: HashMap<usize, Resource>
 }
 
 impl ResourceTracker {
@@ -210,8 +319,7 @@ impl ResourceTracker {
     ///
     pub fn new() -> Self {
         ResourceTracker {
-            free_resources: HashMap::new(),
-            allocated_resources: HashMap::new()
+            resources: HashMap::new()
         }
     }
 
@@ -226,7 +334,24 @@ impl ResourceTracker {
     /// * `res`: A  `Resource` object to track within this `ResourceTracker`.
     ///
     pub fn track_resource(&mut self, res: Resource) {
-        self.free_resources.insert(res.id, res);
+        self.resources.insert(res.id, res);
+    }
+
+    /// Determine if a `Resource` of a specific `ResourceType` is free during a `NaivePeriod`.
+    ///
+    /// # Arguments
+    /// - `resource_type`: A borrowed reference to a `ResourceType` to check for.
+    /// - `period`: An instance of [NaivePeriod](chrono_period::NaivePeriod) for which to check
+    ///   against.
+    ///
+    /// # Returns
+    /// - `true`, if a `Resource` of type `resource_type` is free for the period `period`; `false`,
+    ///   otherwise.
+    pub fn is_resource_of_type_free_for_period(&self, resource_type: &ResourceType,
+                                               period: NaivePeriod) -> bool {
+      self.resources.iter()
+        .filter(|res| res.1.resource_type == *resource_type)
+        .any(|res| !res.1.is_allocated_over_period(period))
     }
 
     /// Retrieve the next [NaiveDateTime](chrono::NaiveDateTime) at which a `Resource` of a
@@ -244,98 +369,76 @@ impl ResourceTracker {
     ///     if there is at least one `Resource` of type `resource_type` allocated.
     ///   * `None`: If there are no `Resource`s of type `resource_type` that can be allocated.
     ///
-    pub fn next_available_resource_date_for_type(&mut self, current_date: NaiveDateTime,
-                                                 resource_type : ResourceType)
+    pub fn get_next_available_resource_date_for_type_over_period(&mut self,
+                                                                 resource_type: &ResourceType,
+                                                                 period: NaivePeriod)
       -> Option<NaiveDateTime> {
 
-      self.refresh(current_date);
+      let mut free_dates: Vec<NaiveDateTime> = self.resources.iter()
+        .filter(|res| res.1.resource_type == *resource_type)
+        .map(|res| {
+            res.1.get_earliest_free_date_for_period(period)
+        }).collect();
 
-      match self.free_resources.iter().find(|x| x.1.resource_type == resource_type) {
-          Some(_x) => return Some(current_date),
-          None => None::<NaiveDateTime> // essentially a noop
-      };
+        free_dates.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-      let allocated_of_type : Vec<PossiblyAllocatedResource> =
-        self.allocated_resources.clone().into_iter()
-                                .filter(|p| p.1.resource.resource_type == resource_type)
-                                .map(|p| p.1)
-                                .collect();
+        if free_dates.is_empty() {
+            return None;
+        }
 
-      if allocated_of_type.is_empty() {
-          return None;
-      }
-
-      let next_free = allocated_of_type.into_iter()
-                                       .min_by(|x, y| x.free_date.cmp(&y.free_date))
-                                       .map(|x| x.free_date);
-      next_free
+        Some(free_dates[0])
     }
 
-    /// Query for a `Resource` of a specific `ResourceType`, and mark the next free instance of
-    /// this type as _in use_ for a given period of time from a starting date.
+    /// Allocate a `Resource` of a specific type for a given `NaivePeriod`.
     ///
     /// # Arguments
-    /// * `resource_type`: A [ResourceType](ResourceType) to query for.
-    /// * `start_date`: The [NaiveDateTime](chrono::NaiveDateTime) at which the allocation of the
-    ///   first encountered instance of an unallocated `Resource` of type `resource_type` should
-    ///   begin.
-    /// * `duration`: A [Duration](chrono::Duration) for which the `Resource` will be allocated.
+    /// - `resource_type`: The `ResourceType` to allocate.
+    /// - `period`: The [NaivePeriod](chrono_period::NaivePeriod) during which the allocation
+    ///   should happen.
+    ///
+    /// # Notes
+    /// `Resource` objects are checked in `id` order, so if multiple `Resource`s with the requested
+    /// `ResourceType` are free for the requested `NaivePeriod`, then the one with the minimum `id`
+    /// will be allocated and returned.
     ///
     /// # Returns
-    /// - An `Option` containing either a `Resource` (a cloned version of the allocated
-    ///   `Resource`), if there is a free `Resource` of type `resource_type`; otherwise `None`.
+    /// - An `Option` containing either:
+    ///   - `Some(x)`, where `x` is a `Resource` whose type corresponds to `resource_type` and
+    ///     which is free during the given `NaivePeriod`
+    ///   - None, if no `Resource` with type `resource_type` is free during the given `NaivePeriod`
+    pub fn allocate_resource_of_type_for_period(&mut self, resource_type: &ResourceType,
+                                                period: NaivePeriod) -> Option<&Resource> {
+      // println!("Requesting resource of type {:?} for period starting {:?}", resource_type,
+      //          period.start);
+
+      if !self.is_resource_of_type_free_for_period(resource_type, period) {
+          return None
+      }
+
+      // Because of the above check, we know this will return an element, so the unwrap() should
+      // never panic here.
+      let mut resources: Vec<(&usize, &mut Resource)> = self.resources.iter_mut().collect::<Vec<(&usize, &mut Resource)> >();
+      resources.sort_by(|a, b| a.0.cmp(b.0));
+
+      let resource_tuple: (&usize, &mut Resource) = resources.into_iter()
+          .filter(|hash_entry| {
+            hash_entry.1.resource_type == *resource_type
+              && !hash_entry.1.is_allocated_over_period(period)
+          }).next().unwrap();
+
+      let ret_val = resource_tuple.1.allocate_over_period(period);
+
+      // println!("Allocated resource of type: {:?}", ret_val.unwrap().resource_type);
+
+      ret_val
+    }
+
+    /// Retrieve all `Resource` objects tracked by this `ResourceTracker`.
     ///
-    pub fn allocate_resource_of_type_for_duration(&mut self, resource_type: ResourceType,
-                                                  start_date: NaiveDateTime,
-                                                  duration: Duration) -> Option<Resource> {
-        self.refresh(start_date);
-
-        let free_resources = self.free_resources.clone();
-        let mut free_vector: Vec<(&usize, &Resource)> = free_resources.iter().collect();
-        free_vector.sort_by(|a, b| a.0.cmp(b.0));
-        let to_remove: Option<(&usize, &Resource)>
-          = free_vector.iter()
-                       .find(|res| res.1.resource_type == resource_type)
-                       .map(|res| res.clone());
-
-        match to_remove {
-            Some(x) => {
-                self.move_resource_to_allocated_list(x.1, start_date.checked_add_signed(duration)
-                                                                    .unwrap());
-                Some((self.allocated_resources.get(&x.1.id).unwrap().resource).clone())
-            },
-            None => None
-        }
-    }
-
+    /// # Returns
+    /// - A `Vec` containing a copy of all `Resource` objects that are tracked by this
+    ///   `ResourceTracker`.
     pub fn get_all_tracked_resources(&self) -> Vec<Resource> {
-        self.allocated_resources.clone().into_iter()
-          .map(|r| r.1.resource)
-          .chain(self.free_resources.clone().into_iter().map(|r| r.1))
-          .collect()
-    }
-
-    fn move_resource_to_allocated_list(&mut self, res: &Resource, free_date: NaiveDateTime) {
-        self.free_resources.remove(&res.id);
-        self.allocated_resources.insert(res.id, PossiblyAllocatedResource {
-            resource: res.clone(),
-            free_date: free_date
-        });
-    }
-
-    fn move_resource_to_free_list(&mut self, res: &Resource) {
-        self.allocated_resources.remove(&res.id);
-        self.free_resources.insert(res.id, res.clone());
-    }
-
-    fn refresh(&mut self, current_date: NaiveDateTime) {
-        let collected: Vec<Resource> = self.allocated_resources.iter()
-          .filter(|pair| pair.1.free_date.cmp(&current_date) == Ordering::Less)
-          .map(|pair| pair.1.resource.clone())
-          .collect();
-
-        for next_resource in collected {
-            self.move_resource_to_free_list(&next_resource);
-        }
+        self.resources.clone().into_iter().map(|tuple| tuple.1).collect()
     }
 }

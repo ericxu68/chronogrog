@@ -1,0 +1,155 @@
+[1] Damned Squirrel Mk. II
+  child 2
+  child 3
+  child 4
+  child 5
+  child 6
+  child 7
+
+  [2] Planning
+    start 2020-01-01
+    color #7A5624
+    duration 4
+    dep 3
+
+  [3] Brewing
+    start 2020-01-01 04
+    color #7A5624
+    duration 24
+    res Large Kettle
+    res Large Mash Tun
+    res Large Lauter Tun
+    dep 4
+
+  [4] Primary Fermentation
+    start 2020-01-02 04
+    color #7A5624
+    duration 792
+    res FV-001
+    dep 5
+
+  [5] Secondary Fermentation
+    start 2020-02-04 04
+    color #7A5624
+    duration 1536
+    res Big Bertha
+    dep 6
+
+  [6] Carbonation
+    start 2020-04-08 04
+    color #7A5624
+    duration 240
+    res Scott's CO2 Tank
+    res Scott's Kegerator
+    res Keg 001
+    dep 7
+
+  [7] Available to Drink
+    start 2020-04-18 04
+    color #7A5624
+    duration 4320
+    res Keg 002
+
+[8] Copperton
+  child 9
+  child 10
+  child 11
+  child 12
+  child 13
+  child 14
+
+  [9] Planning
+    start 2020-01-01
+    color #C37114
+    duration 4
+    dep 10
+
+  [10] Brewing
+    start 2020-01-02 04
+    color #C37114
+    duration 24
+    res Large Kettle
+    res Large Mash Tun
+    res Large Lauter Tun
+    dep 11
+
+  [11] Primary Fermentation
+    start 2020-01-03 04
+    color #C37114
+    duration 120
+    res Big Bertha
+    dep 12
+
+  [12] Secondary Fermentation
+    start 2020-01-08 04
+    color #C37114
+    duration 552
+    res Big Bertha
+    dep 13
+
+  [13] Carbonation
+    start 2020-01-31 04
+    color #C37114
+    duration 240
+    res Scott's CO2 Tank
+    res Scott's Kegerator
+    res Keg 001
+    dep 14
+
+  [14] Available to Drink
+    start 2020-04-18 04
+    color #C37114
+    duration 4320
+    res Keg 001
+
+[15] Dobroy Nochi Mk. II
+  child 16
+  child 17
+  child 18
+  child 19
+  child 20
+  child 21
+
+  [16] Planning
+    start 2020-01-01
+    color #2D0607
+    duration 4
+    dep 17
+
+  [17] Brewing
+    start 2020-01-03 04
+    color #2D0607
+    duration 24
+    res Large Kettle
+    res Large Mash Tun
+    res Large Lauter Tun
+    dep 18
+
+  [18] Primary Fermentation
+    start 2020-02-04 04
+    color #2D0607
+    duration 288
+    res FV-001
+    dep 19
+
+  [19] Secondary Fermentation
+    start 2020-02-16 04
+    color #2D0607
+    duration 1680
+    res FV-001
+    dep 20
+
+  [20] Carbonation
+    start 2020-10-15 04
+    color #2D0607
+    duration 240
+    res Scott's CO2 Tank
+    res Scott's Kegerator
+    res Keg 002
+    dep 21
+
+  [21] Available to Drink
+    start 2020-10-25 04
+    color #2D0607
+    duration 4320
+    res Keg 001
