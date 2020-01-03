@@ -158,6 +158,12 @@ pub struct Resource {
     #[serde(rename="type")]
     pub resource_type: ResourceType,
 
+    /// A `String` denoting the capacity for this `Resource`.
+    ///
+    /// # Notes
+    /// This is currently unused, but will likely be used in the future in the form of an `enum` so
+    /// that we can check to see if a particular `Recipe` requires more than one `Resource` of a
+    /// particular type.
     #[serde(rename="capacity")]
     pub capacity_str: String,
 
@@ -166,6 +172,19 @@ pub struct Resource {
 }
 
 impl Resource {
+    /// Create a new instance of `Resource`, given an id, a name, a `ResourceType`, and a capacity.
+    ///
+    /// # Arguments
+    /// - `id`: A `usize` indicating the identifier for the new `Resource`. This should be globally
+    ///   unique for all `Resource` objects used within a single `ResourceTracker`, however no
+    ///   enforcement of this is performed.
+    /// - `name`: An `&str` denoting the name of the new `Resource`.
+    /// - `resource_type`: A `ResourceType` denoting the type for the new `Resource`.
+    /// - `capacity_str`: An `&str` that denotes the capacity for the new `Resource`.
+    ///
+    /// # Returns
+    /// - A new instance of `Resource`, having the requested id, name, `ResourceType`, and
+    ///   capacity.
     pub fn new(id: usize, name: &str, resource_type: ResourceType,
                capacity_str: &str) -> Resource {
         Resource {
@@ -178,7 +197,16 @@ impl Resource {
     }
 
     /// Determine if this `Resource` is allocated at any time during a specific `Duration` starting
-    // at a specific `NaiveDateTime`.
+    /// at a specific `NaiveDateTime`.
+    ///
+    /// # Arguments
+    /// - `start`: A [NaiveDateTime](chrono::NaiveDateTime) where the desired allocation would
+    ///   begin.
+    /// - `duration`: A [Duration](chrono::Duration) over which this `Resource` would be allocated.
+    ///
+    /// # Returns
+    /// - `true`, if this `Resource` is already allocated _at any point_ during the requested
+    ///   period comprising `start` - `end`, including `end`; `false`, otherwise.
     pub fn is_allocated_over_start_duration(&self, start: NaiveDateTime,
                                             duration: Duration) -> bool {
         let intersection_period = NaivePeriod::from_start_duration(start, duration);
@@ -188,6 +216,15 @@ impl Resource {
         })
     }
 
+    /// Determine if this `Resource` is allocated at any time during a specific `NaivePeriod`.
+    ///
+    /// # Arguments
+    /// - `period`: A [NaivePeriod](chrono::NaivePeriod) over which to check whether this
+    ///   `Resource` is allocated.
+    ///
+    /// # Returns
+    /// - `true`, if this `Resource` is already allocated _at any point_ during the requested
+    ///   `NaivePeriod`; `false`, otherwise.
     pub fn is_allocated_over_period(&self, period: NaivePeriod) -> bool {
         self.is_allocated_over_start_duration(period.start, period.duration())
     }
@@ -247,14 +284,17 @@ pub struct PossiblyAllocatedResource {
 
 /// Tracking mechanism for `Resource`s.
 ///
-/// All usage of `Resource` objects shoiuld be tracked through this data structure. This provides
+/// All usage of `Resource` objects should be tracked through this data structure. This provides
 /// an API for retrieving an unused `Resource` of a given type.
 ///
-/// This data structure tracks used and unused `Resource` objects. For `Resource`s that are
-/// currently in use (and thus cannot be allocated to a new task), each object is tracked using the
-/// `AllocatedResource` structure.
+/// # Notes
+/// This data structure tracks `Resource` objects. Each `Resource` keeps track of its own times
+/// when it is allocated, using the [NaivePeriod](chrono_period::NaivePeriod) data structure.
 ///
-/// For unused `Resources`, a borrowed reference to the individual `Resource` is available.
+/// `Resource` objects are tracked using a hash map, hashing on the `id` field of the `Resource`.
+/// Thus, it is assumed that `id` fields will be unique within this instance of `ResourceTracker`.
+/// If you have an `id` that is duplicated, the behavior is undefined, but likely will result in
+/// unwanted behavior.
 #[derive(Debug)]
 pub struct ResourceTracker {
     resources: HashMap<usize, Resource>
@@ -297,6 +337,16 @@ impl ResourceTracker {
         self.resources.insert(res.id, res);
     }
 
+    /// Determine if a `Resource` of a specific `ResourceType` is free during a `NaivePeriod`.
+    ///
+    /// # Arguments
+    /// - `resource_type`: A borrowed reference to a `ResourceType` to check for.
+    /// - `period`: An instance of [NaivePeriod](chrono_period::NaivePeriod) for which to check
+    ///   against.
+    ///
+    /// # Returns
+    /// - `true`, if a `Resource` of type `resource_type` is free for the period `period`; `false`,
+    ///   otherwise.
     pub fn is_resource_of_type_free_for_period(&self, resource_type: &ResourceType,
                                                period: NaivePeriod) -> bool {
       self.resources.iter()
@@ -339,6 +389,23 @@ impl ResourceTracker {
         Some(free_dates[0])
     }
 
+    /// Allocate a `Resource` of a specific type for a given `NaivePeriod`.
+    ///
+    /// # Arguments
+    /// - `resource_type`: The `ResourceType` to allocate.
+    /// - `period`: The [NaivePeriod](chrono_period::NaivePeriod) during which the allocation
+    ///   should happen.
+    ///
+    /// # Notes
+    /// `Resource` objects are checked in `id` order, so if multiple `Resource`s with the requested
+    /// `ResourceType` are free for the requested `NaivePeriod`, then the one with the minimum `id`
+    /// will be allocated and returned.
+    ///
+    /// # Returns
+    /// - An `Option` containing either:
+    ///   - `Some(x)`, where `x` is a `Resource` whose type corresponds to `resource_type` and
+    ///     which is free during the given `NaivePeriod`
+    ///   - None, if no `Resource` with type `resource_type` is free during the given `NaivePeriod`
     pub fn allocate_resource_of_type_for_period(&mut self, resource_type: &ResourceType,
                                                 period: NaivePeriod) -> Option<&Resource> {
       // println!("Requesting resource of type {:?} for period starting {:?}", resource_type,
@@ -366,6 +433,11 @@ impl ResourceTracker {
       ret_val
     }
 
+    /// Retrieve all `Resource` objects tracked by this `ResourceTracker`.
+    ///
+    /// # Returns
+    /// - A `Vec` containing a copy of all `Resource` objects that are tracked by this
+    ///   `ResourceTracker`.
     pub fn get_all_tracked_resources(&self) -> Vec<Resource> {
         self.resources.clone().into_iter().map(|tuple| tuple.1).collect()
     }
